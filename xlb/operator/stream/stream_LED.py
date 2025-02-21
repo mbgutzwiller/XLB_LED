@@ -77,8 +77,7 @@ class Stream(Operator):
 
                 # Read the distribution function
                 # Unlike other functionals, we need to cast the type here since we read from the buffer
-                for m in range(5):
-                    _f[l * 5 + m] = self.compute_dtype(f[l * 5 + m, pull_index[0], pull_index[1], pull_index[2]])
+                _f[l] = self.compute_dtype(f[l, pull_index[0], pull_index[1], pull_index[2]])
 
             return _f
 
@@ -96,7 +95,7 @@ class Stream(Operator):
             _f = functional(f_0, index)
 
             # Write the output
-            for l in range(self.velocity_set.q * 5):
+            for l in range(self.velocity_set.q):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f[l])
 
         return functional, kernel

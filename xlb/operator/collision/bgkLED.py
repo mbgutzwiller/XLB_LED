@@ -9,15 +9,16 @@ from xlb.operator import Operator
 from functools import partial
 
 
-class BGK(Collision):
+class BGK_LED(Collision):
     """
-    BGK collision operator for LBM.
+    BGK collision operator for linear elastodynamics LBM.
     """
 
     @Operator.register_backend(ComputeBackend.JAX)
     @partial(jit, static_argnums=(0,))
     def jax_implementation(self, f: jnp.ndarray, feq: jnp.ndarray, rho, u, omega):
-        return f - self.compute_dtype(omega) * (f - feq)
+        _omega = self.compute_dtype(omega)
+        return _omega * feq + (1 - _omega) * f
 
     def _construct_warp(self):
         # Set local constants TODO: This is a hack and should be fixed with warp update
@@ -28,8 +29,10 @@ class BGK(Collision):
         @wp.func
         def functional(f: Any, feq: Any, rho: Any, u: Any, omega: Any):
             # fneq = f - feq
-            return f - self.compute_dtype(omega) * (f - feq)
-            # return fout
+            # fout = f - self.compute_dtype(omega) * fneq
+            _omega = self.compute_dtype(omega)
+            fout = _omega * feq + (1 - _omega) * f
+            return fout
 
         # Construct the warp kernel
         @wp.kernel

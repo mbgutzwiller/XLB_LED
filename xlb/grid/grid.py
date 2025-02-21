@@ -22,7 +22,7 @@ def grid_factory(shape: Tuple[int, ...], compute_backend: ComputeBackend = None)
 
 class Grid(ABC):
     def __init__(self, shape: Tuple[int, ...], compute_backend: ComputeBackend):
-        self.shape = shape
+        self.shape = shape  # Shape for 2d would be (100, 100) for square grid with 100 nodes along one dimension.
         self.dim = len(shape)
         self.compute_backend = compute_backend
         self._initialize_backend()
@@ -50,28 +50,36 @@ class Grid(ABC):
         """
 
         # Get the shape of the grid
-        origin = np.array([0, 0, 0])
-        bounds = np.array(self.shape)
-        if remove_edges:
+        origin = np.array([0, 0, 0])  # Set the origin at 0.
+        bounds = np.array(self.shape)  # Convert the (100, 100) to np array.
+        if remove_edges:  # Removes outer layer of nodes.
             origin += 1
             bounds -= 1
         slice_x = slice(origin[0], bounds[0])
         slice_y = slice(origin[1], bounds[1])
-        dim = len(bounds)
+        # dim = len(bounds)  # Seems redundant with self.dim, replaced dim with self.dim (DONE)
 
         # Generate bounding box indices for each face
-        grid = np.indices(self.shape)
+        grid = np.indices(self.shape)  # Returns an array with indices for each dimension like
+    #     array([[[0, 0, 0, 0],  # Row indices
+    #             [1, 1, 1, 1],
+    #             [2, 2, 2, 2]],
+
+    #            [[0, 1, 2, 3],  # Column indices
+    #            [0, 1, 2, 3],
+    #            [0, 1, 2, 3]]])
+    # instead of having a 1d array where nodes are assigned an ID from 0 to 11.
         boundingBoxIndices = {}
 
-        if dim == 2:
+        if self.dim == 2:
             nx, ny = self.shape
             boundingBoxIndices = {
-                "bottom": grid[:, slice_x, 0],
-                "top": grid[:, slice_x, ny - 1],
-                "left": grid[:, 0, slice_y],
-                "right": grid[:, nx - 1, slice_y],
+                "bottom": grid[:, slice_x, 0],  # Take all x, but only the bottom one of y
+                "top": grid[:, slice_x, ny - 1],  # Take all x, but only the top one from y
+                "left": grid[:, 0, slice_y],  # Analogous
+                "right": grid[:, nx - 1, slice_y],  # Analogous
             }
-        elif dim == 3:
+        elif self.dim == 3:
             nx, ny, nz = self.shape
             slice_z = slice(origin[2], bounds[2])
             boundingBoxIndices = {

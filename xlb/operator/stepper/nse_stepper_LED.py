@@ -10,7 +10,7 @@ from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import Precision
 from xlb.operator import Operator
 from xlb.operator.stream import Stream
-from xlb.operator.collision import BGK, KBC
+from xlb.operator.collision import BGK_LED
 from xlb.operator.equilibrium import QuadraticEquilibrium
 from xlb.operator.macroscopic import Macroscopic
 from xlb.operator.stepper import Stepper
@@ -22,25 +22,27 @@ from xlb.helper import check_bc_overlaps
 from xlb.helper.nse_solver import create_nse_fields
 
 
-class IncompressibleNavierStokesStepper(Stepper):
+class LinearElastodynamicsStepper(Stepper):
     def __init__(
         self,
         grid,
         boundary_conditions=[],
-        collision_type="BGK",
+        collision_type="BGK_LED",
         forcing_scheme="exact_difference",
         force_vector=None,
     ):
         super().__init__(grid, boundary_conditions)
 
-        # Construct the collision operator
-        if collision_type == "BGK":
-            self.collision = BGK(self.velocity_set, self.precision_policy, self.compute_backend)
+        # Construct the collision operator, using equation for collision (28) 
+        if collision_type == "BGK_LED":
+            self.collision = BGK_LED(self.velocity_set, self.precision_policy, self.compute_backend)
         elif collision_type == "KBC":
-            self.collision = KBC(self.velocity_set, self.precision_policy, self.compute_backend)
+            raise NotImplementedError
+            # self.collision = KBC(self.velocity_set, self.precision_policy, self.compute_backend)
 
         if force_vector is not None:
-            self.collision = ForcedCollision(collision_operator=self.collision, forcing_scheme=forcing_scheme, force_vector=force_vector)
+            raise NotImplementedError
+            # self.collision = ForcedCollision(collision_operator=self.collision, forcing_scheme=forcing_scheme, force_vector=force_vector)
 
         # Construct the operators
         self.stream = Stream(self.velocity_set, self.precision_policy, self.compute_backend)
@@ -133,13 +135,14 @@ class IncompressibleNavierStokesStepper(Stepper):
         Perform a single step of the lattice boltzmann method
         """
         # Cast to compute precision
-        f_0 = self.precision_policy.cast_to_compute_jax(f_0)
-        f_1 = self.precision_policy.cast_to_compute_jax(f_1)
+        f_0 = self.precision_policy.cast_to_compute_jax(f_0)  # Untouched
+        f_1 = self.precision_policy.cast_to_compute_jax(f_1)  # Untouched
 
-        # Apply streaming
-        f_post_stream = self.stream(f_0)  # Here we have the streaming. Base streamer is periodic.
+        # Apply streaming, base streamer is periodic
+        f_post_stream = self.stream(f_0)  # Untouched
 
-        # Apply boundary conditions
+        # Apply boundary conditions.
+        # Skipped for now, as bc = [] in sinewave_LED_file.
         for bc in self.boundary_conditions:
             if bc.implementation_step == ImplementationStep.STREAMING:
                 f_post_stream = bc(
@@ -149,7 +152,8 @@ class IncompressibleNavierStokesStepper(Stepper):
                     missing_mask,
                 )
 
-        # Compute the macroscopic variables
+        # Compute the macroscopic variables, ie. the moments
+        # In LED these are v_x, v_y
         rho, u = self.macroscopic(f_post_stream)
 
         # Compute equilibrium

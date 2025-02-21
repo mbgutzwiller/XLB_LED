@@ -21,6 +21,7 @@ class ZeroMoment(Operator):
 
         @wp.func
         def functional(f: _f_vec):
+            # This initializes the rho with value 0 and correct precision
             rho = self.compute_dtype(0.0)
             for l in range(self.velocity_set.q):
                 rho += f[l]

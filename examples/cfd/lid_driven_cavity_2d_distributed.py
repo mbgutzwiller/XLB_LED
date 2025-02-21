@@ -44,5 +44,10 @@ if __name__ == "__main__":
     visc = prescribed_vel * clength / Re
     omega = 1.0 / (3.0 * visc + 0.5)
 
-    simulation = LidDrivenCavity2D_distributed(omega, prescribed_vel, grid_shape, velocity_set, compute_backend, precision_policy)
+    simulation = LidDrivenCavity2D_distributed(omega=omega,
+                                               prescribed_vel=prescribed_vel,
+                                               grid_shape=grid_shape,
+                                               velocity_set=velocity_set,
+                                               compute_backend=compute_backend,
+                                               precision_policy=precision_policy)
     simulation.run(num_steps=50000, post_process_interval=1000)

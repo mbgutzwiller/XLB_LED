@@ -14,8 +14,8 @@ class Macroscopic(Operator):
     """A class to compute both zero and first moments of distribution functions (rho, u)."""
 
     def __init__(self, *args, **kwargs):
-        self.zero_moment = ZeroMoment(*args, **kwargs)
-        self.first_moment = FirstMoment(*args, **kwargs)
+        self.zero_moment = ZeroMoment(*args, **kwargs)  # This is the density rho
+        self.first_moment = FirstMoment(*args, **kwargs)  # This is the velocity u 
         super().__init__(*args, **kwargs)
 
     @Operator.register_backend(ComputeBackend.JAX)
