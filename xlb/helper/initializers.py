@@ -29,7 +29,7 @@ def initialize_eq_LED(f, grid, precision_policy, compute_backend):
         f = equilibrium(U_0)
 
     elif compute_backend == ComputeBackend.WARP:
-        U_0 = grid.create_field(cardinality=20, fill_value=0.0, dtype=precision_policy.compute_precision)
+        U_0 = grid.create_field(cardinality=20, fill_value=0.00, dtype=precision_policy.compute_precision)
         f = equilibrium(U_0, f)
     del U_0
     return f

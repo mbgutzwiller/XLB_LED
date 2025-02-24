@@ -4,7 +4,7 @@ from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
 from xlb.operator.stepper import LinearElastodynamicsStepper
 from xlb.operator.equilibrium import Equilibrium_LED
-from xlb.operator.boundary_condition import HalfwayBounceBackBC, EquilibriumBC_LED, DoNothingBC  # TODO: Add periodic and Dirichlet BCs.
+from xlb.operator.boundary_condition import EquilibriumBC_LED  # TODO: Add periodic and Dirichlet BCs.
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set  # Done.
@@ -54,15 +54,15 @@ class SineWave2D_LED:
         # # TODO: Adjust BCs here.
         walls = self.define_boundary_indices()
         # bc_top = EquilibriumBC(rho=1.0, u=(self.prescribed_vel, 0.0), indices=lid)
-        bc_walls = HalfwayBounceBackBC(indices=walls)
-        self.boundary_conditions = [bc_walls]
+        bc_walls = EquilibriumBC_LED(U_num_tilde=(0, 0, 0, 0, 0), indices=walls)
+        self.boundary_conditions = []
         # self.boundary_conditions = []
 
     def setup_stepper(self):
         self.stepper = LinearElastodynamicsStepper(
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
-            collision_type="BGK",
+            collision_type="BGK_LED",
         )
 
     def run(self, num_steps, post_process_interval=100):
@@ -95,17 +95,24 @@ class SineWave2D_LED:
         U_num_tilde = macro(f_0)
 
         # TODO: fix this to make faster. Maybe add _equilibrium_LED = Equilibrium_LED() to run method and pass c_K, c_mu
-        _equilibrium_LED = Equilibrium_LED()
-        c_K = _equilibrium_LED.c_K
-        c_mu = _equilibrium_LED.c_mu
+        K = 137.8e9
+        rho = 8.96
+        nu = 0.343
+        mu = (3 * K * (1 - 2 * nu)) / (2 * (1 + nu))
+
+        c_mu = (mu / rho) ** 0.5
+        c_K = (K / rho) ** 0.5
+        c = 1
 
         # remove boundary cells
         U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
+        # print(U_num_tilde.shape)
 
         fields = {"sigma_xx": -(c_K * U_num_tilde[2] + c_mu * U_num_tilde[3]),
                   "sigma_yy": -(c_K * U_num_tilde[2] - c_mu * U_num_tilde[3]),
                   "sigma_xy": -(c_mu * U_num_tilde[4])}
-
+        
+        # print(fields)
         save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
         # save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
         
@@ -133,15 +140,7 @@ if __name__ == "__main__":
     # Change velocity set to D2Q4
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-    # Setting fluid viscosity and relaxation parameter.
-    # Re = 200.0
-    # prescribed_vel = 0.05
-    # clength = grid_shape[0] - 1
-    # visc = prescribed_vel * clength / Re
-    # omega = 1.0 / (3.0 * visc + 0.5)
     omega = 2
-
-    # TODO: add forcing.
 
     simulation = SineWave2D_LED(omega, grid_shape, velocity_set, compute_backend, precision_policy)
     simulation.run(num_steps=50000, post_process_interval=1000)

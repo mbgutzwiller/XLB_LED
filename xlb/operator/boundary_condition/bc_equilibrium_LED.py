@@ -15,13 +15,13 @@ from xlb.compute_backend import ComputeBackend
 from xlb.operator.equilibrium.equilibrium import Equilibrium
 from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.operator import Operator
-from xlb.operator.boundary_condition.boundary_condition import (
-    ImplementationStep,
-    BoundaryCondition,
+from xlb.operator.boundary_condition.boundary_condition_LED import (
+    ImplementationStep_LED,
+    BoundaryCondition_LED,
 )
 
 
-class EquilibriumBC_LED(BoundaryCondition):
+class EquilibriumBC_LED(BoundaryCondition_LED):
     """
     Full Bounce-back boundary condition for a lattice Boltzmann method simulation.
     """
@@ -45,7 +45,7 @@ class EquilibriumBC_LED(BoundaryCondition):
 
         # Call the parent constructor
         super().__init__(
-            ImplementationStep.STREAMING,
+            ImplementationStep_LED.STREAMING,
             velocity_set,
             precision_policy,
             compute_backend,

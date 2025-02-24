@@ -15,7 +15,8 @@ class ZeroMoment_LED(Operator):
     @partial(jit, static_argnums=(0), inline=True)
     def jax_implementation(self, f):
         # return jnp.sum(f, axis=0, keepdims=True)
-        return f.reshape(5, -1).sum(axis=0)
+        Nx, Ny = f.shape[1], f.shape[2]
+        return f.reshape(4, 5, Nx, Ny).sum(axis=0)
 
     def _construct_warp(self):
         _f_vec = wp.vec(20, dtype=self.compute_dtype)

@@ -296,7 +296,7 @@ class LinearElastodynamicsStepper(Stepper):
 
             # Apply streaming
             # 2. Streaming
-            # 2. (a)
+            # 2. (a) stream on domain interior
             _f_post_stream = self.stream_LED.warp_functional(f_0, index)
 
             _f0_thread, _f1_thread, _missing_mask = get_thread_data(f_0, f_1, missing_mask, index)
@@ -306,25 +306,25 @@ class LinearElastodynamicsStepper(Stepper):
             # Apply post-streaming boundary conditions
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
 
-            # TODO: 2. Streaming point (c)
+            # TODO: 2. Prepare displacement solution (c)
 
             # _rho, _u = self.macroscopic_LED.warp_functional(_f_post_stream)
             # 1. Collision
             # 1. (a)
             U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream)
 
-            # TODO: 1. Collision point (b)
+            # TODO: 1. (b) - get displacement solution.
             
             # 1. (c)
             _feq = self.equilibrium_LED.warp_functional(U_num_tilde)
-            # 1. (d)
+            # 1. (d) Collision step
             _f_post_collision = self.collision_LED.warp_functional(_f_post_stream, _feq, omega)
 
             # Apply post-collision boundary conditions
             # _f_post_collision = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_stream, _f_post_collision, False)
 
             # Apply auxiliary recovery for boundary conditions (swapping)
-            apply_aux_recovery_bc(index, _boundary_id, _missing_mask, f_0, _f1_thread)
+            # apply_aux_recovery_bc(index, _boundary_id, _missing_mask, f_0, _f1_thread)
 
             # Store the result in f_1
             # Changed from range(q) to (5*q) which is 20 for LED

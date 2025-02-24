@@ -4,7 +4,7 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.grid import grid_factory
 from xlb import DefaultConfig
-from xlb.operator.boundary_masker import IndicesBoundaryMasker
+from xlb.operator.boundary_masker.indices_boundary_masker_LED import IndicesBoundaryMasker_LED
 from xlb.operator.boundary_condition import EquilibriumBC_LED
 from xlb.operator.equilibrium import Equilibrium_LED
 
@@ -37,7 +37,7 @@ def test_bc_equilibrium_warp(dim, velocity_set, grid_shape):
 
     bc_mask = my_grid.create_field(cardinality=1, dtype=xlb.Precision.UINT8)
 
-    indices_boundary_masker = IndicesBoundaryMasker()
+    indices_boundary_masker = IndicesBoundaryMasker_LED()
 
     # Make indices for boundary conditions (sphere)
     sphere_radius = grid_shape[0] // 4
@@ -66,7 +66,7 @@ def test_bc_equilibrium_warp(dim, velocity_set, grid_shape):
     f = my_grid.create_field(cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32)
     f_pre = my_grid.create_field(cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32)
     f_post = my_grid.create_field(
-        cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32, fill_value=2.0
+        cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32, fill_value=2
     )  # Arbitrary value so that we can check if the values are changed outside the boundary
 
     f = equilibrium_bc(f_pre, f_post, bc_mask, missing_mask)
@@ -81,7 +81,7 @@ def test_bc_equilibrium_warp(dim, velocity_set, grid_shape):
     for i, weight in enumerate(weights):
         if dim == 2:
             for j in range(5):
-                assert np.allclose(f[i * 5 + j, indices[0], indices[1]], weight), f"Direction {i} in f does not match the expected weight"
+                assert np.allclose(f[i * 5 + j, indices[0], indices[1]], weight), f"Direction {i} in f={f[i * 5 + j, indices[0], indices[1]]} does not match the expected weight={weight}"
         else:
             assert np.allclose(f[i, indices[0], indices[1], indices[2]], weight), f"Direction {i} in f does not match the expected weight"
 
@@ -91,7 +91,7 @@ def test_bc_equilibrium_warp(dim, velocity_set, grid_shape):
     if dim == 2:
         for i in range(velocity_set.q):
             for j in range(5):
-                assert np.allclose(f[i * 5 + j, mask_outside], f_post[i, mask_outside])
+                assert np.allclose(f[i * 5 + j, mask_outside], f_post[i * 5 + j, mask_outside])
     else:
         for i in range(velocity_set.q):
             assert np.allclose(f[i, mask_outside], f_post[i, mask_outside])

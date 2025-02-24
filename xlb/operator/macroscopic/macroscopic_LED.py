@@ -11,7 +11,7 @@ from xlb.operator.macroscopic.first_moment import FirstMoment
 
 
 class Macroscopic_LED(Operator):
-    """A class to compute both zero and first moments of distribution functions (rho, u)."""
+    """A class to compute both zero and first moments of distribution functions U_num_tilde."""
 
     def __init__(self, *args, **kwargs):
         self.zero_moment_LED = ZeroMoment_LED(*args, **kwargs)  # This is the density rho
@@ -44,7 +44,7 @@ class Macroscopic_LED(Operator):
                 _f[l] = f[l, index[0], index[1], index[2]]
             _U_num_tilde = functional(_f)
 
-            for d in range(20):
+            for d in range(5):
                 U_num_tilde[d, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[d])
 
         return functional, kernel

@@ -3,7 +3,7 @@ from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
 from xlb.operator.stepper import IncompressibleNavierStokesStepper
-from xlb.operator.boundary_condition import HalfwayBounceBackBC, EquilibriumBC_LED
+from xlb.operator.boundary_condition import HalfwayBounceBackBC, EquilibriumBC
 from xlb.operator.macroscopic import Macroscopic
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set
@@ -51,7 +51,7 @@ class LidDrivenCavity2D:
 
     def setup_boundary_conditions(self):
         lid, walls = self.define_boundary_indices()
-        bc_top = EquilibriumBC_LED(rho=1.0, u=(self.prescribed_vel, 0.0), indices=lid)
+        bc_top = EquilibriumBC(rho=1.0, u=(self.prescribed_vel, 0.0), indices=lid)
         bc_walls = HalfwayBounceBackBC(indices=walls)
         self.boundary_conditions = [bc_walls, bc_top]
 
@@ -90,9 +90,9 @@ class LidDrivenCavity2D:
         rho = rho[:, 1:-1, 1:-1]
         u = u[:, 1:-1, 1:-1]
         u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
-
+        # print(rho.shape)
+        # print(u.shape)
         fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
-
         save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
         save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
 
