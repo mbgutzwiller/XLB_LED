@@ -2,9 +2,10 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
-from xlb.operator.stepper import IncompressibleNavierStokesStepper  # TODO: Add LEDStepper.
-from xlb.operator.boundary_condition import HalfwayBounceBackBC, EquilibriumBC  # TODO: Add periodic and Dirichlet BCs.
-from xlb.operator.macroscopic import Macroscopic
+from xlb.operator.stepper import LinearElastodynamicsStepper
+from xlb.operator.equilibrium import Equilibrium_LED
+from xlb.operator.boundary_condition import HalfwayBounceBackBC, EquilibriumBC_LED, DoNothingBC  # TODO: Add periodic and Dirichlet BCs.
+from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set  # Done.
 import warp as wp
@@ -13,7 +14,7 @@ import numpy as np
 
 
 class SineWave2D_LED:
-    def __init__(self, omega, prescribed_vel, grid_shape, velocity_set, compute_backend, precision_policy):
+    def __init__(self, omega, grid_shape, velocity_set, compute_backend, precision_policy):
         # initialize compute_backend
         xlb.init(
             velocity_set=velocity_set,
@@ -33,7 +34,7 @@ class SineWave2D_LED:
         self.grid = grid_factory(grid_shape, compute_backend=compute_backend)
 
         # Setup the simulation BC and stepper
-        self._setup()  # TODO
+        self._setup()
 
     def _setup(self):
         self.setup_boundary_conditions()
@@ -44,21 +45,21 @@ class SineWave2D_LED:
     def define_boundary_indices(self):
         box = self.grid.bounding_box_indices()  # For interior nodes
         box_no_edge = self.grid.bounding_box_indices(remove_edges=True)  # For boundary nodes
-        lid = box_no_edge["top"]
-        walls = [box["bottom"][i] + box["left"][i] + box["right"][i] for i in range(self.velocity_set.d)]
+        # lid = box_no_edge["top"]
+        walls = [box["bottom"][i] + box["left"][i] + box["right"][i] + box["top"][i] for i in range(self.velocity_set.d)]
         walls = np.unique(np.array(walls), axis=-1).tolist()
-        return lid, walls  # Return as many different indices sets as you need.
+        return walls  # Return as many different indices sets as you need.
 
     def setup_boundary_conditions(self):
         # # TODO: Adjust BCs here.
-        # lid, walls = self.define_boundary_indices()
+        walls = self.define_boundary_indices()
         # bc_top = EquilibriumBC(rho=1.0, u=(self.prescribed_vel, 0.0), indices=lid)
-        # bc_walls = HalfwayBounceBackBC(indices=walls)
-        # self.boundary_conditions = [bc_walls, bc_top]
-        self.boundary_conditions = []
+        bc_walls = HalfwayBounceBackBC(indices=walls)
+        self.boundary_conditions = [bc_walls]
+        # self.boundary_conditions = []
 
     def setup_stepper(self):
-        self.stepper = IncompressibleNavierStokesStepper(
+        self.stepper = LinearElastodynamicsStepper(
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
             collision_type="BGK",
@@ -86,23 +87,40 @@ class SineWave2D_LED:
         else:
             f_0 = self.f_0
 
-        macro = Macroscopic(
+        macro = Macroscopic_LED(
             compute_backend=ComputeBackend.JAX,
             precision_policy=self.precision_policy,
-            velocity_set=xlb.velocity_set.D2Q9(precision_policy=self.precision_policy, compute_backend=ComputeBackend.JAX),
+            velocity_set=xlb.velocity_set.D2Q4(precision_policy=self.precision_policy, compute_backend=ComputeBackend.JAX),
         )
+        U_num_tilde = macro(f_0)
 
-        rho, u = macro(f_0)
+        # TODO: fix this to make faster. Maybe add _equilibrium_LED = Equilibrium_LED() to run method and pass c_K, c_mu
+        _equilibrium_LED = Equilibrium_LED()
+        c_K = _equilibrium_LED.c_K
+        c_mu = _equilibrium_LED.c_mu
 
         # remove boundary cells
-        rho = rho[:, 1:-1, 1:-1]
-        u = u[:, 1:-1, 1:-1]
-        u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
+        U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
 
-        fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
+        fields = {"sigma_xx": -(c_K * U_num_tilde[2] + c_mu * U_num_tilde[3]),
+                  "sigma_yy": -(c_K * U_num_tilde[2] - c_mu * U_num_tilde[3]),
+                  "sigma_xy": -(c_mu * U_num_tilde[4])}
 
-        save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
-        save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
+        save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
+        # save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
+        
+
+        # rho, u = macro(f_0)
+
+        # # remove boundary cells
+        # rho = rho[:, 1:-1, 1:-1]
+        # u = u[:, 1:-1, 1:-1]
+        # u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
+
+        # fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
+
+        # save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
+        # save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
 
 
 if __name__ == "__main__":
@@ -116,11 +134,14 @@ if __name__ == "__main__":
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
     # Setting fluid viscosity and relaxation parameter.
-    Re = 200.0
-    prescribed_vel = 0.05
-    clength = grid_shape[0] - 1
-    visc = prescribed_vel * clength / Re
-    omega = 1.0 / (3.0 * visc + 0.5)
+    # Re = 200.0
+    # prescribed_vel = 0.05
+    # clength = grid_shape[0] - 1
+    # visc = prescribed_vel * clength / Re
+    # omega = 1.0 / (3.0 * visc + 0.5)
+    omega = 2
 
-    simulation = SineWave2D_LED(omega, prescribed_vel, grid_shape, velocity_set, compute_backend, precision_policy)
+    # TODO: add forcing.
+
+    simulation = SineWave2D_LED(omega, grid_shape, velocity_set, compute_backend, precision_policy)
     simulation.run(num_steps=50000, post_process_interval=1000)

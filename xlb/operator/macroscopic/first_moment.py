@@ -30,6 +30,8 @@ class FirstMoment(Operator):
             u = _u_vec()
             for l in range(self.velocity_set.q):
                 for d in range(self.velocity_set.d):
+                    # This is from M_ab = sum(f_ij*(i^a)*(i^b))
+                    # and rho*u_x = M_10, rho_uy = M_01
                     if _c[d, l] == 1:
                         u[d] += f[l]
                     elif _c[d, l] == -1:

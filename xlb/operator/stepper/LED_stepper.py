@@ -9,17 +9,17 @@ from xlb import DefaultConfig
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import Precision
 from xlb.operator import Operator
-from xlb.operator.stream import Stream
+from xlb.operator.stream import Stream_LED
 from xlb.operator.collision import BGK_LED
-from xlb.operator.equilibrium import QuadraticEquilibrium
-from xlb.operator.macroscopic import Macroscopic
+from xlb.operator.equilibrium import Equilibrium_LED
+from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.operator.stepper import Stepper
 from xlb.operator.boundary_condition.boundary_condition import ImplementationStep
 from xlb.operator.boundary_condition.boundary_condition_registry import boundary_condition_registry
 from xlb.operator.collision import ForcedCollision
 from xlb.operator.boundary_masker import IndicesBoundaryMasker, MeshBoundaryMasker
 from xlb.helper import check_bc_overlaps
-from xlb.helper.nse_solver import create_nse_fields
+from xlb.helper.LED_solver import create_LED_fields
 
 
 class LinearElastodynamicsStepper(Stepper):
@@ -35,7 +35,7 @@ class LinearElastodynamicsStepper(Stepper):
 
         # Construct the collision operator, using equation for collision (28) 
         if collision_type == "BGK_LED":
-            self.collision = BGK_LED(self.velocity_set, self.precision_policy, self.compute_backend)
+            self.collision_LED = BGK_LED(self.velocity_set, self.precision_policy, self.compute_backend)
         elif collision_type == "KBC":
             raise NotImplementedError
             # self.collision = KBC(self.velocity_set, self.precision_policy, self.compute_backend)
@@ -45,11 +45,11 @@ class LinearElastodynamicsStepper(Stepper):
             # self.collision = ForcedCollision(collision_operator=self.collision, forcing_scheme=forcing_scheme, force_vector=force_vector)
 
         # Construct the operators
-        self.stream = Stream(self.velocity_set, self.precision_policy, self.compute_backend)
-        self.equilibrium = QuadraticEquilibrium(self.velocity_set, self.precision_policy, self.compute_backend)
-        self.macroscopic = Macroscopic(self.velocity_set, self.precision_policy, self.compute_backend)
+        self.stream_LED = Stream_LED(self.velocity_set, self.precision_policy, self.compute_backend)
+        self.equilibrium_LED = Equilibrium_LED(self.velocity_set, self.precision_policy, self.compute_backend)
+        self.macroscopic_LED = Macroscopic_LED(self.velocity_set, self.precision_policy, self.compute_backend)
 
-    def prepare_fields(self, initializer=None):
+    def prepare_fields(self, initializer=None):  # TODO: initialize the field, add initialize_eq to helper.initializers
         """Prepare the fields required for the stepper.
 
         Args:
@@ -66,17 +66,17 @@ class LinearElastodynamicsStepper(Stepper):
                 - missing_mask: Mask indicating which populations are missing at boundary nodes
         """
         # Create fields using the helper function
-        _, f_0, f_1, missing_mask, bc_mask = create_nse_fields(
-            grid=self.grid, velocity_set=self.velocity_set, compute_backend=self.compute_backend, precision_policy=self.precision_policy
+        _, f_0, f_1, missing_mask, bc_mask = create_LED_fields(
+            grid=self.grid, compute_backend=self.compute_backend, precision_policy=self.precision_policy
         )
 
         # Initialize distribution functions if initializer is provided
-        if initializer is not None:
-            f_0 = initializer(self.grid, self.velocity_set, self.precision_policy, self.compute_backend)
-        else:
-            from xlb.helper.initializers import initialize_eq
+        # if initializer is not None:
+        #     f_0 = initializer(self.grid, self.velocity_set, self.precision_policy, self.compute_backend)
+        
+        from xlb.helper.initializers import initialize_eq_LED  # TODO: initialze eq for LED
 
-            f_0 = initialize_eq(f_0, self.grid, self.velocity_set, self.precision_policy, self.compute_backend)
+        f_0 = initialize_eq_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
 
         # Copy f_0 using backend-specific copy to f_1
         if self.compute_backend == ComputeBackend.JAX:
@@ -92,7 +92,7 @@ class LinearElastodynamicsStepper(Stepper):
         return f_0, f_1, bc_mask, missing_mask
 
     @classmethod
-    def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):
+    def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):  # TODO: initialize the BCs, maybe OK
         """Process boundary conditions and update boundary masks."""
         # Check for boundary condition overlaps
         check_bc_overlaps(boundary_conditions, DefaultConfig.velocity_set.d, DefaultConfig.default_backend)
@@ -121,7 +121,7 @@ class LinearElastodynamicsStepper(Stepper):
         return bc_mask, missing_mask
 
     @staticmethod
-    def _initialize_auxiliary_data(boundary_conditions, f_0, f_1, bc_mask, missing_mask):
+    def _initialize_auxiliary_data(boundary_conditions, f_0, f_1, bc_mask, missing_mask):  # TODO: check when this is needed
         """Initialize auxiliary data for boundary conditions that require it."""
         for bc in boundary_conditions:
             if bc.needs_aux_init and not bc.is_initialized_with_aux_data:
@@ -138,8 +138,8 @@ class LinearElastodynamicsStepper(Stepper):
         f_0 = self.precision_policy.cast_to_compute_jax(f_0)  # Untouched
         f_1 = self.precision_policy.cast_to_compute_jax(f_1)  # Untouched
 
-        # Apply streaming, base streamer is periodic
-        f_post_stream = self.stream(f_0)  # Untouched
+        # Apply streaming, base streamer is periodic. TODO: Adjust for Dirichlet BCs.
+        f_post_stream = self.stream_LED(f_0)  # Done
 
         # Apply boundary conditions.
         # Skipped for now, as bc = [] in sinewave_LED_file.
@@ -152,15 +152,16 @@ class LinearElastodynamicsStepper(Stepper):
                     missing_mask,
                 )
 
-        # Compute the macroscopic variables, ie. the moments
-        # In LED these are v_x, v_y
-        rho, u = self.macroscopic(f_post_stream)
+        # Compute the macroscopic variables, ie. the moments.
+        # In LED we only need zeroth-order moment
+        # In LED, we get v_num from U_num_tilde
+        U_num_tilde = self.macroscopic_LED(f_post_stream)  # Done. TODO: add axternal forcing B_tilde
 
         # Compute equilibrium
-        feq = self.equilibrium(rho, u)
+        feq = self.equilibrium_LED(U_num_tilde)
 
         # Apply collision
-        f_post_collision = self.collision(f_post_stream, feq, rho, u, omega)
+        f_post_collision = self.collision_LED(f_post_stream, feq, U_num_tilde, omega)
 
         # Apply collision type boundary conditions
         for bc in self.boundary_conditions:
@@ -180,8 +181,8 @@ class LinearElastodynamicsStepper(Stepper):
 
     def _construct_warp(self):
         # Set local constants
-        _f_vec = wp.vec(self.velocity_set.q, dtype=self.compute_dtype)
-        _missing_mask_vec = wp.vec(self.velocity_set.q, dtype=wp.uint8)
+        _f_vec = wp.vec(self.velocity_set.q * 5, dtype=self.compute_dtype)
+        _missing_mask_vec = wp.vec(self.velocity_set.q * 5, dtype=wp.uint8)
         _opp_indices = self.velocity_set.opp_indices
 
         # Read the list of bc_to_id created upon instantiation
@@ -240,7 +241,7 @@ class LinearElastodynamicsStepper(Stepper):
             _f0_thread = _f_vec()
             _f1_thread = _f_vec()
             _missing_mask = _missing_mask_vec()
-            for l in range(self.velocity_set.q):
+            for l in range(20):
                 # q-sized vector of pre-streaming populations
                 _f0_thread[l] = self.compute_dtype(f0_buffer[l, index[0], index[1], index[2]])
                 _f1_thread[l] = self.compute_dtype(f1_buffer[l, index[0], index[1], index[2]])
@@ -294,26 +295,40 @@ class LinearElastodynamicsStepper(Stepper):
                 return
 
             # Apply streaming
-            _f_post_stream = self.stream.warp_functional(f_0, index)
+            # 2. Streaming
+            # 2. (a)
+            _f_post_stream = self.stream_LED.warp_functional(f_0, index)
 
             _f0_thread, _f1_thread, _missing_mask = get_thread_data(f_0, f_1, missing_mask, index)
             _f_post_collision = _f0_thread
-
+            
+            # 2. (b)
             # Apply post-streaming boundary conditions
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
 
-            _rho, _u = self.macroscopic.warp_functional(_f_post_stream)
-            _feq = self.equilibrium.warp_functional(_rho, _u)
-            _f_post_collision = self.collision.warp_functional(_f_post_stream, _feq, _rho, _u, omega)
+            # TODO: 2. Streaming point (c)
+
+            # _rho, _u = self.macroscopic_LED.warp_functional(_f_post_stream)
+            # 1. Collision
+            # 1. (a)
+            U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream)
+
+            # TODO: 1. Collision point (b)
+            
+            # 1. (c)
+            _feq = self.equilibrium_LED.warp_functional(U_num_tilde)
+            # 1. (d)
+            _f_post_collision = self.collision_LED.warp_functional(_f_post_stream, _feq, omega)
 
             # Apply post-collision boundary conditions
-            _f_post_collision = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_stream, _f_post_collision, False)
+            # _f_post_collision = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_stream, _f_post_collision, False)
 
             # Apply auxiliary recovery for boundary conditions (swapping)
             apply_aux_recovery_bc(index, _boundary_id, _missing_mask, f_0, _f1_thread)
 
             # Store the result in f_1
-            for l in range(self.velocity_set.q):
+            # Changed from range(q) to (5*q) which is 20 for LED
+            for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
 
         return None, kernel

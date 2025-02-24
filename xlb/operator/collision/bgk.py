@@ -21,12 +21,11 @@ class BGK(Collision):
 
     def _construct_warp(self):
         # Set local constants TODO: This is a hack and should be fixed with warp update
-        _w = self.velocity_set.w
         _f_vec = wp.vec(self.velocity_set.q, dtype=self.compute_dtype)
 
         # Construct the functional
         @wp.func
-        def functional(f: Any, feq: Any, rho: Any, u: Any, omega: Any):
+        def functional(f: Any, feq: Any, omega: Any):
             # fneq = f - feq
             return f - self.compute_dtype(omega) * (f - feq)
             # return fout
@@ -53,7 +52,7 @@ class BGK(Collision):
                 _feq[l] = feq[l, index[0], index[1], index[2]]
 
             # Compute the collision
-            _fout = functional(_f, _feq, rho, u, omega)
+            _fout = functional(_f, _feq, omega)
 
             # Write the result
             for l in range(self.velocity_set.q):

@@ -10,7 +10,7 @@ from xlb.compute_backend import ComputeBackend
 from xlb.operator.operator import Operator
 
 
-class Stream(Operator):
+class Stream_LED(Operator):
     """
     Base class for all streaming operators. This is used for pulling the distribution
     """
@@ -43,6 +43,7 @@ class Stream(Operator):
                 jax.numpy.ndarray
                 The updated distribution function after streaming.
             """
+            # Can leave this unchanged since f is vectorized anyway
             if self.velocity_set.d == 2:
                 return jnp.roll(f, (c[0], c[1]), axis=(0, 1))
             elif self.velocity_set.d == 3:
@@ -53,7 +54,7 @@ class Stream(Operator):
     def _construct_warp(self):
         # Set local constants TODO: This is a hack and should be fixed with warp update
         _c = self.velocity_set.c
-        _f_vec = wp.vec(self.velocity_set.q, dtype=self.compute_dtype)
+        _f_vec = wp.vec(20, dtype=self.compute_dtype)
 
         # Construct the funcional to get streamed indices
         @wp.func
@@ -77,7 +78,10 @@ class Stream(Operator):
 
                 # Read the distribution function
                 # Unlike other functionals, we need to cast the type here since we read from the buffer
-                _f[l] = self.compute_dtype(f[l, pull_index[0], pull_index[1], pull_index[2]])
+                # _f[l] = self.compute_dtype(f[l, pull_index[0], pull_index[1], pull_index[2]])
+                # the f looks like (f_10_vx, f_10_vy, f_10_js, f_10_jd, f_10_jxy, f_01_vx, f_01_vy, f_01_js, f_01_jd, f_01_jxy, ...)
+                for m in range(5):
+                    _f[l * 5 + m] = self.compute_dtype(f[l * 5 + m, pull_index[0], pull_index[1], pull_index[2]])
 
             return _f
 
@@ -95,7 +99,7 @@ class Stream(Operator):
             _f = functional(f_0, index)
 
             # Write the output
-            for l in range(self.velocity_set.q):
+            for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f[l])
 
         return functional, kernel

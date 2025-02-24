@@ -15,8 +15,9 @@ class D2Q4(VelocitySet):
 
     def __init__(self, precision_policy, compute_backend):
         # Construct the velocity vectors and weights
-        cx = [0, 0, 1, -1]
-        cy = [1, -1, 0, 0]
+        # Make sure to match with equilibrium function and initialization.
+        cx = [1, 0, -1, 0]
+        cy = [0, 1, 0, -1]
         c = np.array(tuple(zip(cx, cy))).T
         w = np.array([1/4, 1/4, 1/4, 1/4])
 
