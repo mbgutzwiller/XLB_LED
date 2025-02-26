@@ -30,7 +30,7 @@ class ZeroMoment_LED(Operator):
             U_num_tilde = _u_num_vec()
             for l in range(self.velocity_set.q):
                 for m in range(5):
-                    if m == 2:
+                    if m == 1:
                         U_num_tilde[m] += f[l * 5 + m] + C # TODO: e.g. add body load B_hat in y direction. Is zero now.
                     else:
                         U_num_tilde[m] += f[l * 5 + m]
