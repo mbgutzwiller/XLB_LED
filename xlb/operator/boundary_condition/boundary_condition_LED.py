@@ -153,6 +153,7 @@ class BoundaryCondition_LED(Operator):
                 counter = wp.int32(1)
 
                 # The other remaining BC auxiliary data are stored in missing directions of f_1.
+                # was for i in range(1, velset.q) before.
                 for l in range(1, 4):
                     for m in range(5):
                         if _missing_mask[l * 5 + m] == wp.uint8(1) and counter < _num_of_aux_data:

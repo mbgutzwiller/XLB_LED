@@ -93,7 +93,6 @@ class Equilibrium_LED(Equilibrium):
         def functional(
             U_num_tilde: Any
         ):
-            # Precompute values
             c_K_j_s = U_num_tilde[2] * _c_K
             c_mu_j_d = U_num_tilde[3] * _c_mu
             c_mu_j_xy = U_num_tilde[4] * _c_mu
@@ -114,7 +113,6 @@ class Equilibrium_LED(Equilibrium):
             phi_y_tilde_2c[3] = -c_mu_v_y
             phi_y_tilde_2c[4] = c_mu_v_x
 
-            
             phi_x_tilde_2c = phi_x_tilde_2c * scale  
             phi_y_tilde_2c = phi_x_tilde_2c * scale 
 
@@ -124,7 +122,6 @@ class Equilibrium_LED(Equilibrium):
                 f_eq[i + 5] = scale_2 * (U_num_tilde[i] + phi_y_tilde_2c[i])
                 f_eq[i + 10] = scale_2* (U_num_tilde[i] - phi_x_tilde_2c[i])
                 f_eq[i + 15] = scale_2 * (U_num_tilde[i] - phi_y_tilde_2c[i])
-
 
             return f_eq
 

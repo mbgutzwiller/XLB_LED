@@ -252,31 +252,31 @@ class LinearElastodynamicsStepper(Stepper):
 
             return _f0_thread, _f1_thread, _missing_mask
 
-        @wp.func
-        def apply_aux_recovery_bc(
-            index: Any,
-            _boundary_id: Any,
-            _missing_mask: Any,
-            f_0: Any,
-            _f1_thread: Any,
-        ):
-            # Note:
-            # In XLB, the BC auxiliary data (e.g. prescribed values of pressure or normal velocity) are stored in (i) central index of f_1 and/or
-            # (ii) missing directions of f_1. Some BCs may or may not need all these available storage space. This function checks whether
-            # the BC needs recovery of auxiliary data and then recovers the information for the next iteration (due to buffer swapping) by
-            # writting the thread values of f_1 (i.e._f1_thread) into f_0.
+        # @wp.func
+        # def apply_aux_recovery_bc(
+        #     index: Any,
+        #     _boundary_id: Any,
+        #     _missing_mask: Any,
+        #     f_0: Any,
+        #     _f1_thread: Any,
+        # ):
+        #     # Note:
+        #     # In XLB, the BC auxiliary data (e.g. prescribed values of pressure or normal velocity) are stored in (i) central index of f_1 and/or
+        #     # (ii) missing directions of f_1. Some BCs may or may not need all these available storage space. This function checks whether
+        #     # the BC needs recovery of auxiliary data and then recovers the information for the next iteration (due to buffer swapping) by
+        #     # writting the thread values of f_1 (i.e._f1_thread) into f_0.
 
-            # Unroll the loop over boundary conditions
-            for i in range(wp.static(len(self.boundary_conditions))):
-                if wp.static(self.boundary_conditions[i].needs_aux_recovery):
-                    if _boundary_id == wp.static(self.boundary_conditions[i].id):
-                        # Perform the swapping of data
-                        # (i) Recover the values stored in the central index of f_1
-                        f_0[0, index[0], index[1], index[2]] = self.store_dtype(_f1_thread[0])
-                        # (ii) Recover the values stored in the missing directions of f_1
-                        for l in range(1, self.velocity_set.q):
-                            if _missing_mask[l] == wp.uint8(1):
-                                f_0[_opp_indices[l], index[0], index[1], index[2]] = self.store_dtype(_f1_thread[_opp_indices[l]])
+        #     # Unroll the loop over boundary conditions
+        #     for i in range(wp.static(len(self.boundary_conditions))):
+        #         if wp.static(self.boundary_conditions[i].needs_aux_recovery):
+        #             if _boundary_id == wp.static(self.boundary_conditions[i].id):
+        #                 # Perform the swapping of data
+        #                 # (i) Recover the values stored in the central index of f_1
+        #                 f_0[0, index[0], index[1], index[2]] = self.store_dtype(_f1_thread[0])
+        #                 # (ii) Recover the values stored in the missing directions of f_1
+        #                 for l in range(1, self.velocity_set.q):
+        #                     if _missing_mask[l] == wp.uint8(1):
+        #                         f_0[_opp_indices[l], index[0], index[1], index[2]] = self.store_dtype(_f1_thread[_opp_indices[l]])
 
         @wp.kernel
         def kernel(
@@ -294,40 +294,30 @@ class LinearElastodynamicsStepper(Stepper):
             if _boundary_id == wp.uint8(255):
                 return
 
-            # Apply streaming
-            # 2. Streaming
-            # 2. (a) stream on domain interior
+            # Streaming
+            # 2.a) stream on domain interior
             _f_post_stream = self.stream_LED.warp_functional(f_0, index)
 
             _f0_thread, _f1_thread, _missing_mask = get_thread_data(f_0, f_1, missing_mask, index)
             _f_post_collision = _f0_thread
             
-            # 2. (b)
-            # Apply post-streaming boundary conditions
+            # 2.b) apply post streaming BCs
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
 
-            # TODO: 2. Prepare displacement solution (c)
+            # TODO: 2.c) Prepare displacement solution 
 
-            # _rho, _u = self.macroscopic_LED.warp_functional(_f_post_stream)
-            # 1. Collision
-            # 1. (a)
+            # Collision
+            # 1.a)
             U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream)
 
-            # TODO: 1. (b) - get displacement solution.
+            # TODO: 1.b) - get displacement solution.
             
-            # 1. (c)
+            # 1.c) Get local equilibrium populations
             _feq = self.equilibrium_LED.warp_functional(U_num_tilde)
-            # 1. (d) Collision step
+            # 1.d) Collision step
             _f_post_collision = self.collision_LED.warp_functional(_f_post_stream, _feq, omega)
 
-            # Apply post-collision boundary conditions
-            # _f_post_collision = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_stream, _f_post_collision, False)
-
-            # Apply auxiliary recovery for boundary conditions (swapping)
-            # apply_aux_recovery_bc(index, _boundary_id, _missing_mask, f_0, _f1_thread)
-
             # Store the result in f_1
-            # Changed from range(q) to (5*q) which is 20 for LED
             for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
 

@@ -88,6 +88,7 @@ class LidDrivenCavity2D:
 
         # remove boundary cells
         rho = rho[:, 1:-1, 1:-1]
+        print(type(rho))
         u = u[:, 1:-1, 1:-1]
         u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
         # print(rho.shape)

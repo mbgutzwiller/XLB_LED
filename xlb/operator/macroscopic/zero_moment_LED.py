@@ -21,6 +21,7 @@ class ZeroMoment_LED(Operator):
     def _construct_warp(self):
         _f_vec = wp.vec(20, dtype=self.compute_dtype)
         _u_num_vec = wp.vec(5, dtype=self.compute_dtype)
+        C = self.compute_dtype(0)
 
         @wp.func
         def functional(f: _f_vec):
@@ -29,7 +30,10 @@ class ZeroMoment_LED(Operator):
             U_num_tilde = _u_num_vec()
             for l in range(self.velocity_set.q):
                 for m in range(5):
-                    U_num_tilde[m] += f[l * 5 + m]  # TODO: add body load B_hat
+                    if m == 2:
+                        U_num_tilde[m] += f[l * 5 + m] + C # TODO: e.g. add body load B_hat in y direction. Is zero now.
+                    else:
+                        U_num_tilde[m] += f[l * 5 + m]
             return U_num_tilde
 
         @wp.kernel

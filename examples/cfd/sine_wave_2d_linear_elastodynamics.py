@@ -4,7 +4,7 @@ from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
 from xlb.operator.stepper import LinearElastodynamicsStepper
 from xlb.operator.equilibrium import Equilibrium_LED
-from xlb.operator.boundary_condition import EquilibriumBC_LED  # TODO: Add periodic and Dirichlet BCs.
+from xlb.operator.boundary_condition import DirichletBC_LED  # TODO: Add periodic and Dirichlet BCs.
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set  # Done.
@@ -53,10 +53,8 @@ class SineWave2D_LED:
     def setup_boundary_conditions(self):
         # # TODO: Adjust BCs here.
         walls = self.define_boundary_indices()
-        # bc_top = EquilibriumBC(rho=1.0, u=(self.prescribed_vel, 0.0), indices=lid)
-        bc_walls = EquilibriumBC_LED(U_num_tilde=(0, 0, 0, 0, 0), indices=walls)
-        self.boundary_conditions = []
-        # self.boundary_conditions = []
+        bc_walls = DirichletBC_LED(indices=walls)
+        self.boundary_conditions = [bc_walls]
 
     def setup_stepper(self):
         self.stepper = LinearElastodynamicsStepper(
@@ -106,7 +104,14 @@ class SineWave2D_LED:
 
         # remove boundary cells
         U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
-        # print(U_num_tilde.shape)
+        # U_num_tilde = np.array(U_num_tilde)
+        # U_num_tilde = U_num_tilde.astype(np.float64)
+        print("Contains NaNs:", np.isnan(U_num_tilde).any())
+        print("Contains Inf:", np.isinf(U_num_tilde).any())
+
+        # print(np.mean(U_num_tilde[0, -1]))
+        print(np.max(np.abs(U_num_tilde)))
+        # print(U_num_tilde[0].shape)
 
         fields = {"sigma_xx": -(c_K * U_num_tilde[2] + c_mu * U_num_tilde[3]),
                   "sigma_yy": -(c_K * U_num_tilde[2] - c_mu * U_num_tilde[3]),
@@ -114,20 +119,7 @@ class SineWave2D_LED:
         
         # print(fields)
         save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
-        # save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
-        
-
-        # rho, u = macro(f_0)
-
-        # # remove boundary cells
-        # rho = rho[:, 1:-1, 1:-1]
-        # u = u[:, 1:-1, 1:-1]
-        # u_magnitude = (u[0] ** 2 + u[1] ** 2) ** 0.5
-
-        # fields = {"rho": rho[0], "u_x": u[0], "u_y": u[1], "u_magnitude": u_magnitude}
-
-        # save_fields_vtk(fields, timestep=i, prefix="lid_driven_cavity")
-        # save_image(fields["u_magnitude"], timestep=i, prefix="lid_driven_cavity")
+        save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
 
 if __name__ == "__main__":

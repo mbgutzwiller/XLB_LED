@@ -58,74 +58,74 @@ class HelperFunctionsBC_LED(object):
                     _missing_mask[l] = wp.uint8(0)
             return _f_pre, _f_post, _boundary_id, _missing_mask
 
-        @wp.func
-        def get_bc_fsum(
-            fpop: Any,
-            missing_mask: Any,
-        ):
-            fsum_known = compute_dtype(0.0)
-            fsum_middle = compute_dtype(0.0)
-            for l in range(_q):
-                for m in range(5):
-                    if missing_mask[_opp_indices[l] * 5 + m ] == wp.uint8(1):
-                        fsum_known += compute_dtype(2.0) * fpop[l * 5 + m]
-                    elif missing_mask[l * 5 + m] != wp.uint8(1):
-                        fsum_middle += fpop[l * 5 + m]
-            return fsum_known + fsum_middle
+        # @wp.func
+        # def get_bc_fsum(
+        #     fpop: Any,
+        #     missing_mask: Any,
+        # ):
+        #     fsum_known = compute_dtype(0.0)
+        #     fsum_middle = compute_dtype(0.0)
+        #     for l in range(_q):
+        #         for m in range(5):
+        #             if missing_mask[_opp_indices[l] * 5 + m ] == wp.uint8(1):
+        #                 fsum_known += compute_dtype(2.0) * fpop[l * 5 + m]
+        #             elif missing_mask[l * 5 + m] != wp.uint8(1):
+        #                 fsum_middle += fpop[l * 5 + m]
+        #     return fsum_known + fsum_middle
 
-        @wp.func
-        def get_normal_vectors(
-            missing_mask: Any,
-        ):
-            if wp.static(_d == 3):
-                for l in range(_q):  # TODO: change this for LED implementation.
-                    if missing_mask[l] == wp.uint8(1) and wp.abs(_c[0, l]) + wp.abs(_c[1, l]) + wp.abs(_c[2, l]) == 1:
-                        return -_u_vec(_c_float[0, l], _c_float[1, l], _c_float[2, l])
-            else:
-                for l in range(_q):
-                    for m in range(5):
-                        if missing_mask[l * 5 + m] == wp.uint8(1) and wp.abs(_c[0, l]) + wp.abs(_c[1, l]) == 1:
-                            return -_u_vec(_c_float[0, l], _c_float[1, l])
+        # @wp.func
+        # def get_normal_vectors(
+        #     missing_mask: Any,
+        # ):
+        #     if wp.static(_d == 3):
+        #         for l in range(_q):  # TODO: change this for LED implementation.
+        #             if missing_mask[l] == wp.uint8(1) and wp.abs(_c[0, l]) + wp.abs(_c[1, l]) + wp.abs(_c[2, l]) == 1:
+        #                 return -_u_vec(_c_float[0, l], _c_float[1, l], _c_float[2, l])
+        #     else:
+        #         for l in range(_q):
+        #             for m in range(5):
+        #                 if missing_mask[l * 5 + m] == wp.uint8(1) and wp.abs(_c[0, l]) + wp.abs(_c[1, l]) == 1:
+        #                     return -_u_vec(_c_float[0, l], _c_float[1, l])
 
-        @wp.func
-        def bounceback_nonequilibrium(
-            fpop: Any,
-            feq: Any,
-            missing_mask: Any,
-        ):
-            for l in range(_q):
-                for m in range(5):
-                    if missing_mask[l * 5 + m] == wp.uint8(1):
-                        fpop[l * 5 + m] = fpop[_opp_indices[l]*5 + m] + feq[l * 5 + m] - feq[_opp_indices[l] * 5 + m]  # TODO: Check opposite indices calculation.
-            return fpop
+        # @wp.func
+        # def bounceback_nonequilibrium(
+        #     fpop: Any,
+        #     feq: Any,
+        #     missing_mask: Any,
+        # ):
+        #     for l in range(_q):
+        #         for m in range(5):
+        #             if missing_mask[l * 5 + m] == wp.uint8(1):
+        #                 fpop[l * 5 + m] = fpop[_opp_indices[l]*5 + m] + feq[l * 5 + m] - feq[_opp_indices[l] * 5 + m]  # TODO: Check opposite indices calculation.
+        #     return fpop
 
-        @wp.func
-        def regularize_fpop(
-            fpop: Any,
-            feq: Any,
-        ):
-            """
-            Regularizes the distribution functions by adding non-equilibrium contributions based on second moments of fpop.
-            """
-            # Compute momentum flux of off-equilibrium populations for regularization: Pi^1 = Pi^{neq}
-            f_neq = fpop - feq
-            PiNeq = momentum_flux.warp_functional(f_neq)
+        # @wp.func
+        # def regularize_fpop(
+        #     fpop: Any,
+        #     feq: Any,
+        # ):
+        #     """
+        #     Regularizes the distribution functions by adding non-equilibrium contributions based on second moments of fpop.
+        #     """
+        #     # Compute momentum flux of off-equilibrium populations for regularization: Pi^1 = Pi^{neq}
+        #     f_neq = fpop - feq
+        #     PiNeq = momentum_flux.warp_functional(f_neq)
 
-            # Compute double dot product Qi:Pi1 (where Pi1 = PiNeq)
-            nt = _d * (_d + 1) // 2
-            for l in range(_q):  # TODO: adjust/check this for LED case
-                QiPi1 = compute_dtype(0.0)
-                for t in range(nt):
-                    QiPi1 += _qi[l, t] * PiNeq[t]
+        #     # Compute double dot product Qi:Pi1 (where Pi1 = PiNeq)
+        #     nt = _d * (_d + 1) // 2
+        #     for l in range(_q):  # TODO: adjust/check this for LED case
+        #         QiPi1 = compute_dtype(0.0)
+        #         for t in range(nt):
+        #             QiPi1 += _qi[l, t] * PiNeq[t]
 
-                # assign all populations based on eq 45 of Latt et al (2008)
-                # fneq ~ f^1
-                fpop1 = compute_dtype(4.5) * _w[l] * QiPi1
-                fpop[l] = feq[l] + fpop1
-            return fpop
+        #         # assign all populations based on eq 45 of Latt et al (2008)
+        #         # fneq ~ f^1
+        #         fpop1 = compute_dtype(4.5) * _w[l] * QiPi1
+        #         fpop[l] = feq[l] + fpop1
+        #     return fpop
 
-        self.get_thread_data = get_thread_data
-        self.get_bc_fsum = get_bc_fsum
-        self.get_normal_vectors = get_normal_vectors
-        self.bounceback_nonequilibrium = bounceback_nonequilibrium
-        # self.regularize_fpop = regularize_fpop  # TODO: uncomment if the whole thing works...
+        # self.get_thread_data = get_thread_data
+        # self.get_bc_fsum = get_bc_fsum
+        # self.get_normal_vectors = get_normal_vectors
+        # self.bounceback_nonequilibrium = bounceback_nonequilibrium
+        # # self.regularize_fpop = regularize_fpop  # TODO: uncomment if the whole thing works...

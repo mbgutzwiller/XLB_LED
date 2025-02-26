@@ -9,7 +9,7 @@ from xlb.operator.boundary_condition.bc_zouhe import ZouHeBC
 from xlb.operator.boundary_condition.bc_regularized import RegularizedBC
 from xlb.operator.boundary_condition.bc_extrapolation_outflow import ExtrapolationOutflowBC
 from xlb.operator.boundary_condition.bc_grads_approximation import GradsApproximationBC
-from xlb.operator.boundary_condition.bc_equilibrium_LED import EquilibriumBC_LED
 from xlb.operator.boundary_condition.boundary_condition_LED import BoundaryCondition_LED
 from xlb.operator.boundary_condition.helper_functions_bc_LED import HelperFunctionsBC_LED
+from xlb.operator.boundary_condition.bc_dirichlet_LED import DirichletBC_LED
 

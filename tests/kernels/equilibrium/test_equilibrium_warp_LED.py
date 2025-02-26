@@ -37,16 +37,12 @@ def test_quadratic_equilibrium_warp(dim, velocity_set, grid_shape):
     f_eq = my_grid.create_field(cardinality=20)
 
     compute_macro = Equilibrium_LED()
-    f_eq = compute_macro(U_num_tilde, f_eq)
+    U_num_tilde = compute_macro(U_num_tilde, f_eq)
 
-    f_eq_np = f_eq.numpy()
+    U_num_tilde_np = U_num_tilde.numpy()
 
-    sum_f_eq = np.sum(f_eq_np, axis=0)
-    assert np.allclose(sum_f_eq, 0), "Sum of f_eq should be 0.0 across all directions at each grid point"
-
-    # weights = DefaultConfig.velocity_set.w  #TODO: adopt this assertion
-    # for i, weight in enumerate(weights):
-    #     assert np.allclose(f_eq_np[i, ...], weight), f"Direction {i} in f_eq does not match the expected weight"
+    assert np.allclose(U_num_tilde_np, np.array([0, 0, 0, 0, 0])), "U_num_tilde should be 0.0 in every entry."
+    # TODO: check other statistics
 
 
 # @pytest.fixture(autouse=True)
