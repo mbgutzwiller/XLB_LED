@@ -29,6 +29,7 @@ class Displacement_LED(Operator):
         # Construct the functional
         @wp.func
         def functional(U_num_tilde: Any, uxy_num: Any):
+            # TODO: this was for debugging; try vectorized.
             u_num_vec = _u_num_vec()
             vx = U_num_tilde[0]
             vy = U_num_tilde[1]
