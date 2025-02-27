@@ -11,6 +11,11 @@ import xlb.velocity_set  # Done.
 import warp as wp
 import jax.numpy as jnp
 import numpy as np
+import time
+from xlb.helper.initializers import Initializer_LED
+
+wp.config.print_launches = False
+wp.config.mode = "release"
 
 
 class SineWave2D_LED:
@@ -40,7 +45,7 @@ class SineWave2D_LED:
         self.setup_boundary_conditions()
         self.setup_stepper()
         # Initialize fields using the stepper
-        self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
+        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde = self.stepper.prepare_fields()
 
     def define_boundary_indices(self):
         box = self.grid.bounding_box_indices()  # For interior nodes
@@ -53,8 +58,9 @@ class SineWave2D_LED:
     def setup_boundary_conditions(self):
         # # TODO: Adjust BCs here.
         walls = self.define_boundary_indices()
-        bc_walls = DirichletBC_LED(indices=walls)
-        self.boundary_conditions = [bc_walls]
+        # bc_walls = DirichletBC_LED(indices=walls)
+        # self.boundary_conditions = [bc_walls]
+        self.boundary_conditions = []
 
     def setup_stepper(self):
         self.stepper = LinearElastodynamicsStepper(
@@ -64,9 +70,15 @@ class SineWave2D_LED:
         )
 
     def run(self, num_steps, post_process_interval=100):
+        # TODO: initialize U_num_here
+        initializer = Initializer_LED(velocity_set=self.velocity_set,
+                                      precision_policy=self.precision_policy,
+                                      compute_backend=self.compute_backend)
+        self.f_0, self.U_num_tilde = initializer(self.f_0, self.U_num_tilde)
+
         for i in range(num_steps):
             # f0 is just a copy of the old state here
-            self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i)
+            self.f_0, self.f_1, self.U_num_tilde = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde)
             # f0 is assigned the new state f1.
             # Now assign the old state to the variable which holds the new state after computation.
             # f1 is not used in postprocessing, only f0. This allows for maintaining correct time evolution and
@@ -82,6 +94,7 @@ class SineWave2D_LED:
         if not isinstance(self.f_0, jnp.ndarray):
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
             f_0 = wp.to_jax(self.f_0)[..., 0]
+            U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
         else:
             f_0 = self.f_0
 
@@ -90,20 +103,11 @@ class SineWave2D_LED:
             precision_policy=self.precision_policy,
             velocity_set=xlb.velocity_set.D2Q4(precision_policy=self.precision_policy, compute_backend=ComputeBackend.JAX),
         )
-        U_num_tilde = macro(f_0)
-
-        # TODO: fix this to make faster. Maybe add _equilibrium_LED = Equilibrium_LED() to run method and pass c_K, c_mu
-        K = 137.8e9
-        rho = 8.96
-        nu = 0.343
-        mu = (3 * K * (1 - 2 * nu)) / (2 * (1 + nu))
-
-        c_mu = (mu / rho) ** 0.5
-        c_K = (K / rho) ** 0.5
-        c = 1
-
+        # t = i * wp.delta_t_led
+        # U_num_tilde = macro(f_0)
         # remove boundary cells
         U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
+        print(U_num_tilde)
         # U_num_tilde = np.array(U_num_tilde)
         # U_num_tilde = U_num_tilde.astype(np.float64)
         print("Contains NaNs:", np.isnan(U_num_tilde).any())
@@ -111,11 +115,11 @@ class SineWave2D_LED:
 
         # print(np.mean(U_num_tilde[0, -1]))
         print(np.max(np.abs(U_num_tilde)))
-        # print(U_num_tilde[0].shape)
+        print(U_num_tilde.shape)
 
-        fields = {"sigma_xx": -(c_K * U_num_tilde[2] + c_mu * U_num_tilde[3]),
-                  "sigma_yy": -(c_K * U_num_tilde[2] - c_mu * U_num_tilde[3]),
-                  "sigma_xy": -(c_mu * U_num_tilde[4])}
+        fields = {"sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
+                  "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
+                  "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
         
         # print(fields)
         save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
@@ -123,9 +127,32 @@ class SineWave2D_LED:
 
 
 if __name__ == "__main__":
-    # Running the simulation
-    grid_size = 500
+    # # Running the simulation
+    grid_size = 500  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
+    num_steps = 50000  # Number of collision/streaming steps
+    pp_interval = 100  # Post process interval
+    domain_size = 1  # Size of domain in meters
+    delta_x_led = domain_size/grid_size
+    total_time = 1  # Total real world time
+    delta_t_led = total_time/num_steps
+    c_led = delta_x_led/delta_t_led
+    c_k_led = 1.1**0.5
+    c_mu_led = 0.4**0.5
+    stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
+
+    print(f"Stability factor: {stability_factor}")
+    assert stability_factor, "Unstable!"
+    
+
+
+    print(f"delta_x: {delta_x_led:.21f}")
+    print(f"delta_t: {delta_t_led:.21f}")
+    print(f"c_led: {c_led:.21f}")
+    print(f"c_k_led: {c_k_led:.21f}")
+    print(f"c_mu_led: {c_mu_led:.21f}")
+    
+
     compute_backend = ComputeBackend.WARP
     precision_policy = PrecisionPolicy.FP32FP32
 
@@ -133,6 +160,8 @@ if __name__ == "__main__":
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
     omega = 2
-
+    stime = time.time()
     simulation = SineWave2D_LED(omega, grid_shape, velocity_set, compute_backend, precision_policy)
-    simulation.run(num_steps=50000, post_process_interval=1000)
+    simulation.run(num_steps=num_steps, post_process_interval=pp_interval)
+    print(f"took {time.time() - stime:.2} seconds")
+
