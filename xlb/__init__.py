@@ -15,6 +15,7 @@ import xlb.operator.collision
 import xlb.operator.stream
 import xlb.operator.boundary_condition
 import xlb.operator.macroscopic
+import xlb.operator.displacement
 
 # Grids
 import xlb.grid

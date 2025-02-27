@@ -45,7 +45,7 @@ class SineWave2D_LED:
         self.setup_boundary_conditions()
         self.setup_stepper()
         # Initialize fields using the stepper
-        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde = self.stepper.prepare_fields()
+        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde, self.u_num_displ = self.stepper.prepare_fields()
 
     def define_boundary_indices(self):
         box = self.grid.bounding_box_indices()  # For interior nodes
@@ -74,11 +74,11 @@ class SineWave2D_LED:
         initializer = Initializer_LED(velocity_set=self.velocity_set,
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
-        self.f_0, self.U_num_tilde = initializer(self.f_0, self.U_num_tilde)
+        self.f_0, self.U_num_tilde, self.u_num_displ = initializer(self.f_0, self.U_num_tilde, self.u_num_displ)
 
         for i in range(num_steps):
             # f0 is just a copy of the old state here
-            self.f_0, self.f_1, self.U_num_tilde = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde)
+            self.f_0, self.f_1, self.U_num_tilde, self.u_num_displ = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde, self.u_num_displ)
             # f0 is assigned the new state f1.
             # Now assign the old state to the variable which holds the new state after computation.
             # f1 is not used in postprocessing, only f0. This allows for maintaining correct time evolution and
@@ -95,8 +95,11 @@ class SineWave2D_LED:
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
             f_0 = wp.to_jax(self.f_0)[..., 0]
             U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
+            u_num_displ = wp.to_jax(self.u_num_displ)[..., 0]
         else:
             f_0 = self.f_0
+            U_num_tilde = self.U_num_tilde
+            u_num_displ = self.u_num_displ
 
         macro = Macroscopic_LED(
             compute_backend=ComputeBackend.JAX,
@@ -106,18 +109,21 @@ class SineWave2D_LED:
         # t = i * wp.delta_t_led
         # U_num_tilde = macro(f_0)
         # remove boundary cells
+        u_num_displ = u_num_displ[:, 1:-1, 1:-1]
         U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
-        print(U_num_tilde)
+        # print(U_num_tilde)
         # U_num_tilde = np.array(U_num_tilde)
         # U_num_tilde = U_num_tilde.astype(np.float64)
         print("Contains NaNs:", np.isnan(U_num_tilde).any())
         print("Contains Inf:", np.isinf(U_num_tilde).any())
 
         # print(np.mean(U_num_tilde[0, -1]))
-        print(np.max(np.abs(U_num_tilde)))
-        print(U_num_tilde.shape)
+        # print(np.max(np.abs(U_num_tilde)))
+        # print(U_num_tilde.shape)
 
-        fields = {"sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
+        fields = {"u_x": u_num_displ[0],
+                  "u_y": u_num_displ[1],
+                  "sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
                   "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
                   "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
         

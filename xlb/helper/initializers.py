@@ -35,8 +35,9 @@ def initialize_f_U_num_LED(f, grid, precision_policy, compute_backend):
 
     elif compute_backend == ComputeBackend.WARP:
         U_0 = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
+        u_num_displ = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
         f = equilibrium(U_0, f)
-    return f, U_0
+    return f, U_0, u_num_displ
 
 class Initializer_LED(Operator):
     def __init__(self, velocity_set=None, precision_policy=None, compute_backend=None):
@@ -57,10 +58,19 @@ class Initializer_LED(Operator):
     #     return f, U_0
     
     def _construct_warp(self):
+        _u_num_displ_vector_vec = wp.vec(2, dtype=self.compute_dtype)
         _U_vector_vec = wp.vec(5, dtype=self.compute_dtype)
         _f_vector_vec = wp.vec(20, dtype=self.compute_dtype)
 
         # Analytical functions to set initial f correctly (non trivial in contrast to fluid LBM)
+        @wp.func
+        def u_num_displ(x: wp.float32, y: wp.float32, t: wp.float32):
+            _u_num_displ = _u_num_displ_vector_vec()
+            _u_num_displ[0] = wp.sin(4.*wp.pi*(x-0.3*t)) * wp.cos(2.*wp.pi*(y-0.8*t)) * wp.sin(4.*wp.pi*(t-0.1))
+            _u_num_displ[1] = wp.cos(4.*wp.pi*(x-0.7*t)) * wp.sin(2.*wp.pi*(y-0.1*t)) * wp.cos(4.*wp.pi*(t+0.4))
+            return _u_num_displ
+
+        # This is the U_num_tilde, not the displacement.
         @wp.func
         def U(x: wp.float32, y: wp.float32, t: wp.float32):
             U = _U_vector_vec()
@@ -124,13 +134,14 @@ class Initializer_LED(Operator):
             
         #2nd order IC with relatively high error due to precision issues
         @wp.kernel
-        def initial_conditions_v2_kernel(U_num_tilde: wp.array4d(dtype=Any), f: wp.array4d(dtype=Any)):
+        def initial_conditions_v2_kernel(U_num_tilde: wp.array4d(dtype=Any), f: wp.array4d(dtype=Any), u_num_displ_out: wp.array4d(dtype=Any)):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
             x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
             y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
             t = self.compute_dtype(0.0)
             #evaluate relevant properties from analytical solutions
+            _u_num_displ = u_num_displ(x, y, t)
             _U = U(x, y, t)
             _B = B(x, y, t)*wp.delta_t_led
             _dUdx = dUdx(x, y, t)*wp.delta_x_led
@@ -145,21 +156,22 @@ class Initializer_LED(Operator):
                 _f[s + 5] = _f1[s]
                 _f[s + 10] = _f2[s]
                 _f[s + 15] = _f3[s]
-            # todo: change how we store
-            # store f and U
+            
             for l in range(20):
                 f[l, index[0], index[1], index[2]] = self.store_dtype(_f[l])
             for l in range(5):
                 U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U[l])
+            for l in range(2):
+                u_num_displ_out[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
         
         return None, initial_conditions_v2_kernel
 
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f, U_num_tilde):
+    def warp_implementation(self, f, U_num_tilde, u_num_displ_out):
         wp.launch(
             self.warp_kernel,
-            inputs=[f, U_num_tilde],
+            inputs=[f, U_num_tilde, u_num_displ_out],
             dim=U_num_tilde.shape[1:],
         )
-        return f, U_num_tilde
+        return f, U_num_tilde, u_num_displ_out
    
