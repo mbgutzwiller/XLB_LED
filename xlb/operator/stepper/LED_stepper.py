@@ -74,9 +74,9 @@ class LinearElastodynamicsStepper(Stepper):
         # if initializer is not None:
         #     f_0 = initializer(self.grid, self.velocity_set, self.precision_policy, self.compute_backend)
         
-        from xlb.helper.initializers import initialize_eq_LED  # TODO: initialze eq for LED
+        from xlb.helper.initializers import initialize_f_U_num_LED  # TODO: initialze eq for LED
 
-        f_0 = initialize_eq_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
+        f_0 , U_0 = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
 
         # Copy f_0 using backend-specific copy to f_1
         if self.compute_backend == ComputeBackend.JAX:
@@ -89,7 +89,7 @@ class LinearElastodynamicsStepper(Stepper):
         # Initialize auxiliary data if needed
         f_0, f_1 = self._initialize_auxiliary_data(self.boundary_conditions, f_0, f_1, bc_mask, missing_mask)
 
-        return f_0, f_1, bc_mask, missing_mask
+        return f_0, f_1, bc_mask, missing_mask, U_0
 
     @classmethod
     def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):  # TODO: initialize the BCs, maybe OK
@@ -254,7 +254,7 @@ class LinearElastodynamicsStepper(Stepper):
 
         # @wp.func
         # def apply_aux_recovery_bc(
-        #     index: Any,
+        #     ind_feqex: Any,
         #     _boundary_id: Any,
         #     _missing_mask: Any,
         #     f_0: Any,
@@ -286,6 +286,7 @@ class LinearElastodynamicsStepper(Stepper):
             missing_mask: wp.array4d(dtype=Any),
             omega: Any,
             timestep: int,
+            U_num_tilde: wp.array4d(dtype=Any),
         ):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
@@ -308,26 +309,38 @@ class LinearElastodynamicsStepper(Stepper):
 
             # Collision
             # 1.a)
-            U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream)
+            t = self.compute_dtype(timestep) * wp.delta_t_led
+            _U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream, index, t)
 
             # TODO: 1.b) - get displacement solution.
             
             # 1.c) Get local equilibrium populations
-            _feq = self.equilibrium_LED.warp_functional(U_num_tilde)
+            _feq = self.equilibrium_LED.warp_functional(_U_num_tilde)
             # 1.d) Collision step
             _f_post_collision = self.collision_LED.warp_functional(_f_post_stream, _feq, omega)
 
             # Store the result in f_1
             for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
+            for l in range(5):
+                U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
 
         return None, kernel
 
+    # @Operator.register_backend(ComputeBackend.WARP)
+    # def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep):
+    #     wp.launch(
+    #         self.warp_kernel,
+    #         inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep],
+    #         dim=f_0.shape[1:],
+    #     )
+    #     return f_0, f_1
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep):
+    def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde):
         wp.launch(
             self.warp_kernel,
-            inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep],
+            inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde],
             dim=f_0.shape[1:],
         )
-        return f_0, f_1
+
+        return f_0, f_1, U_num_tilde
