@@ -78,6 +78,7 @@ class SineWave2D_LED:
 
         for i in range(num_steps):
             # f0 is just a copy of the old state here
+            # TODO: get rid of in place updates of u_num_displ and U_num_tilde...
             self.f_0, self.f_1, self.U_num_tilde, self.u_num_displ = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde, self.u_num_displ)
             # f0 is assigned the new state f1.
             # Now assign the old state to the variable which holds the new state after computation.
@@ -120,9 +121,11 @@ class SineWave2D_LED:
         # print(np.mean(U_num_tilde[0, -1]))
         # print(np.max(np.abs(U_num_tilde)))
         # print(U_num_tilde.shape)
+        # print(np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])).shape)
 
         fields = {"u_x": u_num_displ[0],
                   "u_y": u_num_displ[1],
+                  "abs_u": np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])),
                   "sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
                   "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
                   "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
