@@ -146,10 +146,10 @@ class SineWave2D_LED:
         x_axis = np.linspace(0, domain_size, num=grid_size)
         y_axis = x_axis
         # Plot cut for constant y, x_axis
-        plt.plot(x_axis[1:-1], self.u_num_exact_x(x=x_axis, y=y_cut, t=t)[1:-1], label="y = const, u_ex")
-        plt.plot(y_axis[1:-1], self.u_num_exact_y(x=x_axis, y=y_cut, t=t)[1:-1], label="x = const, u_ex")
-        plt.plot(x_axis[1:-1], u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--")
-        plt.plot(y_axis[1:-1], u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--")
+        plt.plot(x_axis[1:-1], self.u_num_exact_x(x=x_axis, y=y_cut, t=t)[1:-1], label="y = const, u_ex", color="green")
+        plt.plot(y_axis[1:-1], self.u_num_exact_y(x=x_axis, y=y_cut, t=t)[1:-1], label="x = const, u_ex", color="orange")
+        plt.plot(x_axis[1:-1], u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--", color="green")
+        plt.plot(y_axis[1:-1], u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
         plt.legend()
         plt.draw()
         plt.pause(0.1)
