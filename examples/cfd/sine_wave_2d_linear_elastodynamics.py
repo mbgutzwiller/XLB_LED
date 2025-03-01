@@ -152,7 +152,7 @@ class SineWave2D_LED:
         plt.plot(y_axis[1:-1], u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
         plt.legend()
         plt.draw()
-        plt.pause(0.1)
+        plt.pause(0.001)
 
 
 

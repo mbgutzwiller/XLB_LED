@@ -308,40 +308,39 @@ class LinearElastodynamicsStepper(Stepper):
             if _boundary_id == wp.uint8(255):
                 return
             
+            # Streaming
+            # 2.a) stream on domain interior
+            _f_post_stream = self.stream_LED.warp_functional(f_0, index)
+
             # TODO: remove U_num_tilde from get thread
             _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread = get_thread_data(f_0, f_1, missing_mask, index, u_num_displ, U_num_tilde)
-            _f_post_stream = _f0_thread
+            _f_post_collision = _f0_thread
+
+            # 2.b) apply post streaming BCs
+            _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
             
+            # TODO: 2.c) Prepare displacement solution
+            _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)
+
             # Collision
             # 1.a)
             t = self.compute_dtype(timestep) * wp.delta_t_led
             _U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream, index, t)
 
             # 1.b) - get displacement solution.
-            _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde, _uxy_thread)
+            _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde, _u_num_displ)
             
             # 1.c) Get local equilibrium populations
             _feq = self.equilibrium_LED.warp_functional(_U_num_tilde)
             # 1.d) Collision step
             _f_post_collision = self.collision_LED.warp_functional(_f_post_stream, _feq, omega)
 
-            # Store the result in f_1
+            for l in range(5):
+                U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
+
             for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
 
-            # Streaming
-            # 2.a) stream on domain interior
-            _f_post_stream = self.stream_LED.warp_functional(f_1, index)
-            
-            # 2.b) apply post streaming BCs
-            _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
-
-            # TODO: 2.c) Prepare displacement solution
-            _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde, _u_num_displ)
-
-            
-            for l in range(5):
-                U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
             for l in range(2):
                 u_num_displ[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
 

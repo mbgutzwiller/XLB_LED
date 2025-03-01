@@ -40,13 +40,15 @@ class ZeroMoment_LED(Operator):
             # B[1] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) + wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) + 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) - 22.4*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t + 1.6)) - 1.12*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 23.88*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6)) + 1.6*wp.pi**2.0*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))
 
             U_num_tilde = _u_num_vec()
+
             for l in range(4):
                 for m in range(5):                        
                     U_num_tilde[m] += f[l * 5 + m]
-                    if m == 0:
-                        U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
-                    if m == 1:
-                        U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
+                    if l == 0:
+                        if m == 0:
+                            U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
+                        if m == 1:
+                            U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
             return U_num_tilde
 
         @wp.kernel

@@ -157,9 +157,13 @@ class Initializer_LED(Operator):
             #         if l == 1:
             #             _U[m] +=  0.5*_B[m]
             
+            # dir x
             _f0 = 0.25*((_U+2.0*phi_x_lb(_U)) + 0.5*(-(_B+2.0*phi_x_lb(_B)) - _dUdx - phi_x_lb(_dUdx) + phi_y_lb(_dUdy) + 2.0*(phi_x_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))
+            #  dir y
             _f1 = 0.25*((_U+2.0*phi_y_lb(_U)) + 0.5*(-(_B+2.0*phi_y_lb(_B)) - _dUdy + phi_x_lb(_dUdx) - phi_y_lb(_dUdy) + 2.0*(phi_y_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))
+            # dir -x
             _f2 = 0.25*((_U-2.0*phi_x_lb(_U)) + 0.5*(-(_B-2.0*phi_x_lb(_B)) + _dUdx - phi_x_lb(_dUdx) + phi_y_lb(_dUdy) - 2.0*(phi_x_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))
+            # dir -y
             _f3 = 0.25*((_U-2.0*phi_y_lb(_U)) + 0.5*(-(_B-2.0*phi_y_lb(_B)) + _dUdy + phi_x_lb(_dUdx) - phi_y_lb(_dUdy) - 2.0*(phi_y_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))
             for s in range(5):
                 _f[s] = _f0[s]
