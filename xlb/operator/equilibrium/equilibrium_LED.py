@@ -106,15 +106,15 @@ class Equilibrium_LED(Equilibrium):
             phi_y_tilde[3] = -c_mu_v_y
             phi_y_tilde[4] = c_mu_v_x
 
-            phi_x_tilde_2c = phi_x_tilde * scale_2 / wp.c_led
-            phi_y_tilde_2c = phi_y_tilde * scale_2 / wp.c_led
+            phi_x_tilde_2c = phi_x_tilde / wp.c_led
+            phi_y_tilde_2c = phi_y_tilde / wp.c_led
 
             f_eq = _f_vec()
             for i in range(5):
-                f_eq[i] = scale_025 * (U_num_tilde[i] + phi_x_tilde_2c[i])
-                f_eq[i + 5] = scale_025 * (U_num_tilde[i] + phi_y_tilde_2c[i])
-                f_eq[i + 10] = scale_025* (U_num_tilde[i] - phi_x_tilde_2c[i])
-                f_eq[i + 15] = scale_025 * (U_num_tilde[i] - phi_y_tilde_2c[i])
+                f_eq[i] = scale_025 * (U_num_tilde[i] + scale_2 * phi_x_tilde_2c[i])
+                f_eq[i + 5] = scale_025 * (U_num_tilde[i] + scale_2 * phi_y_tilde_2c[i])
+                f_eq[i + 10] = scale_025* (U_num_tilde[i] - scale_2 * phi_x_tilde_2c[i])
+                f_eq[i + 15] = scale_025 * (U_num_tilde[i] - scale_2 * phi_y_tilde_2c[i])
 
             return f_eq
 
