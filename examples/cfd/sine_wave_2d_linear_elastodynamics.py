@@ -13,6 +13,8 @@ import jax.numpy as jnp
 import numpy as np
 import time
 from xlb.helper.initializers import Initializer_LED
+import matplotlib.pyplot as plt
+plt.ion()
 
 wp.config.print_launches = False
 wp.config.mode = "release"
@@ -57,7 +59,7 @@ class SineWave2D_LED:
 
     def setup_boundary_conditions(self):
         # # TODO: Adjust BCs here.
-        walls = self.define_boundary_indices()
+        # walls = self.define_boundary_indices()
         # bc_walls = DirichletBC_LED(indices=walls)
         # self.boundary_conditions = [bc_walls]
         self.boundary_conditions = []
@@ -75,6 +77,7 @@ class SineWave2D_LED:
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
         self.f_0, self.U_num_tilde, self.u_num_displ = initializer(self.f_0, self.U_num_tilde, self.u_num_displ)
+        plt.figure()
 
         for i in range(num_steps):
             # f0 is just a copy of the old state here
@@ -89,6 +92,12 @@ class SineWave2D_LED:
 
             if i % post_process_interval == 0 or i == num_steps - 1:
                 self.post_process(i)
+    
+    def u_num_exact_x(self, x, y, t):
+        return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
+    
+    def u_num_exact_y(self, x, y, t):
+        return np.cos(4.*np.pi*(x-0.7*t)) * np.sin(2.*np.pi*(y-0.1*t)) * np.cos(4.*np.pi*(t+0.4))
 
     def post_process(self, i):
         # Write the results. We'll use JAX compute_backend for the post-processing
@@ -107,21 +116,12 @@ class SineWave2D_LED:
             precision_policy=self.precision_policy,
             velocity_set=xlb.velocity_set.D2Q4(precision_policy=self.precision_policy, compute_backend=ComputeBackend.JAX),
         )
-        # t = i * wp.delta_t_led
-        # U_num_tilde = macro(f_0)
         # remove boundary cells
         u_num_displ = u_num_displ[:, 1:-1, 1:-1]
         U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
-        # print(U_num_tilde)
-        # U_num_tilde = np.array(U_num_tilde)
-        # U_num_tilde = U_num_tilde.astype(np.float64)
+
         print("Contains NaNs:", np.isnan(U_num_tilde).any())
         print("Contains Inf:", np.isinf(U_num_tilde).any())
-
-        # print(np.mean(U_num_tilde[0, -1]))
-        # print(np.max(np.abs(U_num_tilde)))
-        # print(U_num_tilde.shape)
-        # print(np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])).shape)
 
         fields = {"u_x": u_num_displ[0],
                   "u_y": u_num_displ[1],
@@ -130,9 +130,31 @@ class SineWave2D_LED:
                   "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
                   "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
         
-        # print(fields)
         save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
         save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
+
+        # Compare solutions on cuts through 2d plane
+        t = np.array(i * wp.delta_t_led)
+        grid_size = 500
+        plot_index = 187
+        plot_index_num = plot_index - 1
+        domain_size = 1
+        delta_x = domain_size/grid_size
+        x_cut = delta_x * (plot_index + 0.5)
+        y_cut = delta_x * (plot_index + 0.5)
+        
+        x_axis = np.linspace(0, domain_size, num=grid_size)
+        y_axis = x_axis
+        # Plot cut for constant y, x_axis
+        plt.plot(x_axis[1:-1], self.u_num_exact_x(x=x_axis, y=y_cut, t=t)[1:-1], label="y = const, u_ex")
+        plt.plot(y_axis[1:-1], self.u_num_exact_y(x=x_axis, y=y_cut, t=t)[1:-1], label="x = const, u_ex")
+        plt.plot(x_axis[1:-1], u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--")
+        plt.plot(y_axis[1:-1], u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--")
+        plt.legend()
+        plt.draw()
+        plt.pause(0.1)
+
+
 
 
 if __name__ == "__main__":

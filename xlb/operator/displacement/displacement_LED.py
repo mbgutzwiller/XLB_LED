@@ -25,7 +25,6 @@ class Displacement_LED(Operator):
         # Set local constants TODO: This is a hack and should be fixed with warp update
         _u_num_vec = wp.vec(2, dtype=self.compute_dtype)
         
-
         # Construct the functional
         @wp.func
         def functional(U_num_tilde: Any, uxy_num: Any):
@@ -36,6 +35,7 @@ class Displacement_LED(Operator):
             u_num_vec[0] = uxy_num[0] + self.compute_dtype(0.5) * wp.delta_t_led * vx
             u_num_vec[1] = uxy_num[1] + self.compute_dtype(0.5) * wp.delta_t_led * vy
             return u_num_vec
+        
         
         # Construct the warp kernel
         @wp.kernel

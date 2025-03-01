@@ -144,9 +144,18 @@ class Initializer_LED(Operator):
             _u_num_displ = u_num_displ(x, y, t)
             _U = U(x, y, t)
             _B = B(x, y, t)*wp.delta_t_led
+
             _dUdx = dUdx(x, y, t)*wp.delta_x_led
             _dUdy = dUdy(x, y, t)*wp.delta_x_led
             _f = _f_vector_vec()
+            for l in range(4):
+                for m in range(5):
+                    _U[m] += _f[l * 5 + m]
+                    if l == 0:
+                        _U[m] +=  0.5*_B[m]*wp.delta_t_led
+                    if l == 1:
+                        _U[m] +=  0.5*_B[m]*wp.delta_t_led
+            
             _f0 = 0.25*((_U+2.0*phi_x_lb(_U)) + 0.5*(-(_B+2.0*phi_x_lb(_B)) - _dUdx - phi_x_lb(_dUdx) + phi_y_lb(_dUdy) + 2.0*(phi_x_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))
             _f1 = 0.25*((_U+2.0*phi_y_lb(_U)) + 0.5*(-(_B+2.0*phi_y_lb(_B)) - _dUdy + phi_x_lb(_dUdx) - phi_y_lb(_dUdy) + 2.0*(phi_y_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))
             _f2 = 0.25*((_U-2.0*phi_x_lb(_U)) + 0.5*(-(_B-2.0*phi_x_lb(_B)) + _dUdx - phi_x_lb(_dUdx) + phi_y_lb(_dUdy) - 2.0*(phi_x_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))

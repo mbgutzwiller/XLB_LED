@@ -73,8 +73,8 @@ class Equilibrium_LED(Equilibrium):
     def _construct_warp(self):
         # Set local constants TODO: This is a hack and should be fixed with warp update
 
-        scale = wp.constant(self.compute_dtype(2.0 / 1))
-        scale_2 = self.compute_dtype(0.25)
+        scale_2 = wp.constant(self.compute_dtype(2.0))
+        scale_025 = self.compute_dtype(0.25)
 
         _f_vec = wp.vec(20, dtype=self.compute_dtype)
         _U_num_tilde_vec = wp.vec(5, dtype=self.compute_dtype)
@@ -91,30 +91,30 @@ class Equilibrium_LED(Equilibrium):
             c_mu_j_xy = U_num_tilde[4] * wp.c_mu_led
             c_mu_v_x = U_num_tilde[0] * wp.c_mu_led
             c_mu_v_y = U_num_tilde[1] * wp.c_mu_led
-            phi_x_tilde_2c = _phi_x_tilde_2c()
-            phi_y_tilde_2c = _phi_y_tilde_2c()
+            phi_x_tilde = _phi_x_tilde_2c()
+            phi_y_tilde = _phi_y_tilde_2c()
 
-            phi_x_tilde_2c[0] = c_K_j_s + c_mu_j_d
-            phi_x_tilde_2c[1] = c_mu_j_xy
-            phi_x_tilde_2c[2] = wp.c_k_led * U_num_tilde[0]
-            phi_x_tilde_2c[3] = c_mu_v_x
-            phi_x_tilde_2c[4] = c_mu_v_y
+            phi_x_tilde[0] = c_K_j_s + c_mu_j_d
+            phi_x_tilde[1] = c_mu_j_xy
+            phi_x_tilde[2] = wp.c_k_led * U_num_tilde[0]
+            phi_x_tilde[3] = c_mu_v_x
+            phi_x_tilde[4] = c_mu_v_y
 
-            phi_y_tilde_2c[0] = c_mu_j_xy
-            phi_y_tilde_2c[1] = c_K_j_s - c_mu_j_d
-            phi_y_tilde_2c[2] = wp.c_k_led * U_num_tilde[1]
-            phi_y_tilde_2c[3] = -c_mu_v_y
-            phi_y_tilde_2c[4] = c_mu_v_x
+            phi_y_tilde[0] = c_mu_j_xy
+            phi_y_tilde[1] = c_K_j_s - c_mu_j_d
+            phi_y_tilde[2] = wp.c_k_led * U_num_tilde[1]
+            phi_y_tilde[3] = -c_mu_v_y
+            phi_y_tilde[4] = c_mu_v_x
 
-            phi_x_tilde_2c = phi_x_tilde_2c * scale / wp.c_led
-            phi_y_tilde_2c = phi_x_tilde_2c * scale / wp.c_led
+            phi_x_tilde_2c = phi_x_tilde * scale_2 / wp.c_led
+            phi_y_tilde_2c = phi_y_tilde * scale_2 / wp.c_led
 
             f_eq = _f_vec()
             for i in range(5):
-                f_eq[i] = scale_2 * (U_num_tilde[i] + phi_x_tilde_2c[i])
-                f_eq[i + 5] = scale_2 * (U_num_tilde[i] + phi_y_tilde_2c[i])
-                f_eq[i + 10] = scale_2* (U_num_tilde[i] - phi_x_tilde_2c[i])
-                f_eq[i + 15] = scale_2 * (U_num_tilde[i] - phi_y_tilde_2c[i])
+                f_eq[i] = scale_025 * (U_num_tilde[i] + phi_x_tilde_2c[i])
+                f_eq[i + 5] = scale_025 * (U_num_tilde[i] + phi_y_tilde_2c[i])
+                f_eq[i + 10] = scale_025* (U_num_tilde[i] - phi_x_tilde_2c[i])
+                f_eq[i + 15] = scale_025 * (U_num_tilde[i] - phi_y_tilde_2c[i])
 
             return f_eq
 
