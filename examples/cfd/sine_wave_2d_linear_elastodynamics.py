@@ -76,8 +76,28 @@ class SineWave2D_LED:
         initializer = Initializer_LED(velocity_set=self.velocity_set,
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
-        self.f_0, self.U_num_tilde, self.u_num_displ = initializer(self.f_0, self.U_num_tilde, self.u_num_displ)
         plt.figure()
+        self.f_0, self.U_num_tilde, self.u_num_displ = initializer(self.f_0, self.U_num_tilde, self.u_num_displ)
+        # for i in range(num_steps):
+            # # Collision
+            # # 1.a)
+            # t = (i * wp.delta_t_led)
+            # self.U_num_tilde = self.stepper.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(t))
+            # # 1.b) - get displacement solution.
+            # self.u_num_displ = self.stepper.displacement_LED(self.U_num_tilde, self.u_num_displ, self.u_num_displ)
+            
+            # # 1.c) Get local equilibrium populations
+            # feq = self.stepper.equilibrium_LED(self.U_num_tilde, self.f_0)
+            # # 1.d) Collision step
+            # self.f_1 = self.stepper.collision_LED(self.f_0, feq, self.f_1, omega)
+            # # self.f_0, self.f_1 = self.f_1, self.f_0
+
+            # # 2. Streaming
+            # self.f_1 = self.stepper.stream_LED(self.f_0, self.f_1)
+            # self.f_0 = self.f_1
+
+
+            # self.u_num_displ = self.stepper.displacement_LED(self.U_num_tilde, self.u_num_displ, self.u_num_displ)
 
         for i in range(num_steps):
             # f0 is just a copy of the old state here
@@ -111,14 +131,10 @@ class SineWave2D_LED:
             U_num_tilde = self.U_num_tilde
             u_num_displ = self.u_num_displ
 
-        macro = Macroscopic_LED(
-            compute_backend=ComputeBackend.JAX,
-            precision_policy=self.precision_policy,
-            velocity_set=xlb.velocity_set.D2Q4(precision_policy=self.precision_policy, compute_backend=ComputeBackend.JAX),
-        )
+        
         # remove boundary cells
-        u_num_displ = u_num_displ[:, 1:-1, 1:-1]
-        U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
+        # u_num_displ = u_num_displ[:, 1:-1, 1:-1]
+        # U_num_tilde = U_num_tilde[:, 1:-1, 1:-1]
 
         print("Contains NaNs:", np.isnan(U_num_tilde).any())
         print("Contains Inf:", np.isinf(U_num_tilde).any())
@@ -134,34 +150,53 @@ class SineWave2D_LED:
         save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
         # Compare solutions on cuts through 2d plane
-        t = np.array(i * wp.delta_t_led)
-        grid_size = 500
-        plot_index = 187
+        t = np.array((i) * wp.delta_t_led)
+        grid_size = self.grid_shape[0]
+        plot_index = 123
         plot_index_num = plot_index - 1
         domain_size = 1
         delta_x = domain_size/grid_size
-        x_cut = delta_x * (plot_index + 0.5)
-        y_cut = delta_x * (plot_index + 0.5)
+        x_cut = delta_x * (plot_index - 0.5)
+        y_cut = delta_x * (plot_index - 0.5)
         
         x_axis = np.linspace(0, domain_size, num=grid_size)
         y_axis = x_axis
         # Plot cut for constant y, x_axis
-        plt.plot(x_axis[1:-1], self.u_num_exact_x(x=x_axis, y=y_cut, t=t)[1:-1], label="y = const, u_ex", color="green")
-        plt.plot(y_axis[1:-1], self.u_num_exact_y(x=x_axis, y=y_cut, t=t)[1:-1], label="x = const, u_ex", color="orange")
-        plt.plot(x_axis[1:-1], u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--", color="green")
-        plt.plot(y_axis[1:-1], u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
+        plt.plot(x_axis, self.u_num_exact_x(x=x_axis, y=y_cut, t=t), label="y = const, u_ex", color="green")
+        plt.plot(y_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
+        plt.plot(x_axis, u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--", color="green")
+        plt.plot(y_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
         plt.legend()
         plt.draw()
         plt.pause(0.001)
 
+        # u_exact_x = np.array([np.array(self.u_num_exact_x(x=x_axis, y=_y, t=t)) for _y in x_axis])
+        # u_exact_y = np.array([np.array(self.u_num_exact_y(x=x_axis, y=_y, t=t)) for _y in x_axis])
+        # # print(u_exact_x.shape)
+        # error_x = u_num_displ[0] - u_exact_x
+        # error_sum = 0
+        # for i in range(error_x.shape[0]):
+        #     for j in range(error_x.shape[0]):
+        #         error_sum += error_x[i, j]**2
+        # error_sum *= wp.delta_t_led * wp.delta_x_led ** 2 * 40000
+        # error_sum = np.sqrt(error_sum)
+        # norm_sol = 0
+        # for i in range(error_x.shape[0]):
+        #     for j in range(error_x.shape[0]):
+        #         norm_sol += u_exact_x[i, j]**2
+        # norm_sol *= wp.delta_t_led * wp.delta_x_led ** 2 * 40000
+        # norm_sol = np.sqrt(norm_sol)
+        # print(error_sum/norm_sol)
 
+
+        # l2_error_step = 
 
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 500  # Number of grid cells along one dimension
+    grid_size = 400  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 50000  # Number of collision/streaming steps
+    num_steps = 40000  # Number of collision/streaming steps
     pp_interval = 100  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
@@ -172,8 +207,14 @@ if __name__ == "__main__":
     c_mu_led = 0.4**0.5
     stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
 
+    wp.c_mu_led = wp.constant(c_mu_led)
+    wp.c_k_led = wp.constant(c_k_led)
+    wp.delta_t_led = wp.constant(delta_t_led)
+    wp.delta_x_led = wp.constant(delta_x_led)
+    wp.c_led = wp.constant(c_led)
+
     print(f"Stability factor: {stability_factor}")
-    assert stability_factor, "Unstable!"
+    assert stability_factor < 1, "Unstable!"
     
 
 

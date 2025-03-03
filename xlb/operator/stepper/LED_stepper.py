@@ -320,11 +320,12 @@ class LinearElastodynamicsStepper(Stepper):
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
             
             # TODO: 2.c) Prepare displacement solution
+            t = (self.compute_dtype(timestep))* wp.delta_t_led
+
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)
 
             # Collision
             # 1.a)
-            t = self.compute_dtype(timestep) * wp.delta_t_led
             _U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream, index, t)
 
             # 1.b) - get displacement solution.

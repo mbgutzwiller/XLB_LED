@@ -44,11 +44,8 @@ class ZeroMoment_LED(Operator):
             for l in range(4):
                 for m in range(5):                        
                     U_num_tilde[m] += f[l * 5 + m]
-                    if l == 0:
-                        if m == 0:
-                            U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
-                        if m == 1:
-                            U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
+            for m in range(2):
+                U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
             return U_num_tilde
 
         @wp.kernel

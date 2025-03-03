@@ -41,7 +41,7 @@ class Displacement_LED(Operator):
         def kernel(
             U_num_tilde: wp.array4d(dtype=Any),
             u_num_displ: wp.array4d(dtype=Any),
-            _u_num_out: wp.array4d(dtype=Any),
+            u_num_out: wp.array4d(dtype=Any),
         ):
             # Get the global index
             i, j, k = wp.tid()
@@ -56,24 +56,24 @@ class Displacement_LED(Operator):
                 _U_num_tilde[l] = U_num_tilde[l, index[0], index[1], index[2]]
 
             # Compute the collision
-            _u_num_out = functional(U_num_tilde, _uxy_num)
+            _u_num_out = functional(_U_num_tilde, _uxy_num)
 
             # Write the result
             for l in range(2):
-                _u_num_out[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_out[l])
+                u_num_out[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_out[l])
 
         return functional, kernel
 
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, U_num_tilde, u_num_displ, _u_num_out):
+    def warp_implementation(self, U_num_tilde, u_num_displ, u_num_out):
         # Launch the warp kernel
         wp.launch(
             self.warp_kernel,
             inputs=[
                 U_num_tilde,
                 u_num_displ,
-                _u_num_out
+                u_num_out
             ],
             dim=U_num_tilde.shape[1:],
         )
-        return _u_num_out
+        return u_num_out
