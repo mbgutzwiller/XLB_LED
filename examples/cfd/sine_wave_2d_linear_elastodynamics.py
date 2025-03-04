@@ -16,8 +16,8 @@ from xlb.helper.initializers import Initializer_LED
 import matplotlib.pyplot as plt
 plt.ion()
 
-wp.config.print_launches = False
-wp.config.mode = "release"
+# wp.config.print_launches = False
+# wp.config.mode = "release"
 
 
 class SineWave2D_LED:
@@ -118,6 +118,21 @@ class SineWave2D_LED:
     
     def u_num_exact_y(self, x, y, t):
         return np.cos(4.*np.pi*(x-0.7*t)) * np.sin(2.*np.pi*(y-0.1*t)) * np.cos(4.*np.pi*(t+0.4))
+    
+    def U_vx(x: wp.float32, y: wp.float32, t: wp.float32):
+        return 1.6*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4)) + 4.0*wp.pi*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(4.0*t - 0.4)) - 1.2*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))
+    
+    def U_vy(x: wp.float32, y: wp.float32, t: wp.float32):
+        return 2.8*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x)) - 0.2*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6))
+    
+    def U_js(x: wp.float32, y: wp.float32, t: wp.float32):
+        return -wp.c_k_led*(4.0*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))+2.0*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
+    
+    def U_jd(x: wp.float32, y: wp.float32, t: wp.float32):
+        return -wp.c_mu_led*(4.0*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))-2.0*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
+    
+    def U_jxy(x: wp.float32, y: wp.float32, t: wp.float32):
+        return -wp.c_mu_led*(-2.0*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))-4.0*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
 
     def post_process(self, i):
         # Write the results. We'll use JAX compute_backend for the post-processing
@@ -161,14 +176,28 @@ class SineWave2D_LED:
         
         x_axis = np.linspace(0, domain_size, num=grid_size)
         y_axis = x_axis
-        # Plot cut for constant y, x_axis
-        plt.plot(x_axis, self.u_num_exact_x(x=x_axis, y=y_cut, t=t), label="y = const, u_ex", color="green")
-        plt.plot(y_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
-        plt.plot(x_axis, u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--", color="green")
-        plt.plot(y_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
+        # # Plot cut of u_num_x, u_num_y for constant y, x_axis
+        # plt.plot(x_axis, self.u_num_exact_x(x=x_axis, y=y_cut, t=t), label="y = const, u_ex", color="green")
+        # plt.plot(y_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
+        # plt.plot(x_axis, u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--", color="green")
+        # plt.plot(y_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
+        # plt.legend()
+        # plt.draw()
+        # plt.pause(0.001)
+
+        # Plot cut of vx, vy for constant y, x_axis
+        plt.plot(x_axis, self.U_vx(x=x_axis, y=y_cut, t=t), label="y = const, vx_ex", color="green")
+        plt.plot(y_axis, self.U_vy(x=x_axis, y=y_cut, t=t), label="y = const, vy_ex", color="green")
+        plt.plot(x_axis, U_num_tilde[0, :, plot_index_num], label="y = const, vx_num", linestyle="--", color="orange")
+        plt.plot(y_axis, U_num_tilde[1, :, plot_index_num], label="y = const, vy_num", linestyle="--", color="orange")
         plt.legend()
         plt.draw()
         plt.pause(0.001)
+
+
+        """
+        Exact error calculation
+        """
 
         # u_exact_x = np.array([np.array(self.u_num_exact_x(x=x_axis, y=_y, t=t)) for _y in x_axis])
         # u_exact_y = np.array([np.array(self.u_num_exact_y(x=x_axis, y=_y, t=t)) for _y in x_axis])
