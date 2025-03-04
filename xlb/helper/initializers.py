@@ -125,8 +125,8 @@ class Initializer_LED(Operator):
         def initial_conditions_v2_kernel(U_num_tilde: wp.array4d(dtype=Any), f: wp.array4d(dtype=Any), u_num_displ_out: wp.array4d(dtype=Any)):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
-            x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
-            y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
+            x = (self.compute_dtype(index[0])) * wp.delta_x_led
+            y = (self.compute_dtype(index[1])) * wp.delta_x_led
             t = self.compute_dtype(0.0)
             #evaluate relevant properties from analytical solutions
             _u_num_displ = u_num_displ(x, y, t)

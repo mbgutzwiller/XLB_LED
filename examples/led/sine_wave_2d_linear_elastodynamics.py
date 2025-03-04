@@ -102,7 +102,7 @@ class SineWave2D_LED:
 
             # self.u_num_displ = self.stepper.displacement_LED(self.U_num_tilde, self.u_num_displ, self.u_num_displ)
 
-        for i in range(num_steps):
+        for i in range(1, num_steps):
             # f0 is just a copy of the old state here
             # TODO: get rid of in place updates of u_num_displ and U_num_tilde...
             self.f_0, self.f_1, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_1, self.u_num_displ_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_0, self.u_num_displ_1)
@@ -170,14 +170,14 @@ class SineWave2D_LED:
         # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
         # Compare solutions on cuts through 2d plane
-        t = np.float32((i-1000) * wp.delta_t_led)  # TODO investigate this
+        t = np.float32((i+0.5) * wp.delta_t_led)  # TODO investigate this
         grid_size = self.grid_shape[0]
         plot_index = int(0.179 * grid_size)
         plot_index_num = plot_index
         domain_size = 1
         delta_x = domain_size/grid_size
-        x_cut = delta_x * (plot_index + 0.5)
-        y_cut = delta_x * (plot_index + 0.5)
+        x_cut = delta_x * (plot_index)
+        y_cut = delta_x * (plot_index)
         
         x_axis = np.linspace(0, domain_size, num=grid_size)
         y_axis = x_axis
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     grid_size = 500  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = 50000  # Number of collision/streaming steps
-    pp_interval = 1000  # Post process interval
+    pp_interval = 100  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
