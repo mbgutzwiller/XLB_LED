@@ -170,7 +170,7 @@ class SineWave2D_LED:
         # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
         # Compare solutions on cuts through 2d plane
-        t = np.float32((i) * wp.delta_t_led)
+        t = np.float32((i-1000) * wp.delta_t_led)  # TODO investigate this
         grid_size = self.grid_shape[0]
         plot_index = int(0.179 * grid_size)
         plot_index_num = plot_index
@@ -189,7 +189,7 @@ class SineWave2D_LED:
         plt.legend()
         plt.draw()
         plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
-        plt.pause(1)
+        plt.pause(0.001)
         plt.clf()
 
         # Plot cut of vx, vy for constant y, x_axis
@@ -201,7 +201,7 @@ class SineWave2D_LED:
         plt.legend()
         plt.draw()
         plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
-        plt.pause(1)
+        plt.pause(0.001)
         plt.clf()
 
 
@@ -233,10 +233,10 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 20  # Number of grid cells along one dimension
+    grid_size = 500  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 10000  # Number of collision/streaming steps
-    pp_interval = 10  # Post process interval
+    num_steps = 50000  # Number of collision/streaming steps
+    pp_interval = 1000  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
