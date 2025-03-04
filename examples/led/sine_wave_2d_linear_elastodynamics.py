@@ -47,7 +47,7 @@ class SineWave2D_LED:
         self.setup_boundary_conditions()
         self.setup_stepper()
         # Initialize fields using the stepper
-        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde, self.u_num_displ = self.stepper.prepare_fields()
+        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_0, self.u_num_displ_1 = self.stepper.prepare_fields()
 
     def define_boundary_indices(self):
         box = self.grid.bounding_box_indices()  # For interior nodes
@@ -77,20 +77,23 @@ class SineWave2D_LED:
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
         plt.figure()
-        self.f_0, self.U_num_tilde, self.u_num_displ = initializer(self.f_0, self.U_num_tilde, self.u_num_displ)
+        self.f_0, self.U_num_tilde_0, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde_0, self.u_num_displ_0)
+        wp.copy(dest=self.f_1, src=self.f_0)
+        wp.copy(self.U_num_tilde_1, self.U_num_tilde_0)
+        wp.copy(self.u_num_displ_1 , self.u_num_displ_0)
         # for i in range(num_steps):
             # # Collision
-            # # 1.a)
-            # t = (i * wp.delta_t_led)
-            # self.U_num_tilde = self.stepper.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(t))
-            # # 1.b) - get displacement solution.
-            # self.u_num_displ = self.stepper.displacement_LED(self.U_num_tilde, self.u_num_displ, self.u_num_displ)
-            
-            # # 1.c) Get local equilibrium populations
-            # feq = self.stepper.equilibrium_LED(self.U_num_tilde, self.f_0)
-            # # 1.d) Collision step
-            # self.f_1 = self.stepper.collision_LED(self.f_0, feq, self.f_1, omega)
-            # # self.f_0, self.f_1 = self.f_1, self.f_0
+        # 1.a)
+        t = 0
+        self.U_num_tilde_0 = self.stepper.macroscopic_LED(self.f_0, self.U_num_tilde_0, wp.float32(t))
+        # 1.b) - get displacement solution.
+        self.u_num_displ_0 = self.stepper.displacement_LED(self.U_num_tilde_0, self.u_num_displ_0, self.u_num_displ_1)
+        
+        # 1.c) Get local equilibrium populations
+        feq = self.stepper.equilibrium_LED(self.U_num_tilde_0, self.f_0)
+        # 1.d) Collision step
+        self.f_0 = self.stepper.collision_LED(self.f_0, feq, self.f_1, omega)
+        # self.f_0, self.f_1 = self.f_1, self.f_0
 
             # # 2. Streaming
             # self.f_1 = self.stepper.stream_LED(self.f_0, self.f_1)
@@ -102,13 +105,15 @@ class SineWave2D_LED:
         for i in range(num_steps):
             # f0 is just a copy of the old state here
             # TODO: get rid of in place updates of u_num_displ and U_num_tilde...
-            self.f_0, self.f_1, self.U_num_tilde, self.u_num_displ = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde, self.u_num_displ)
+            self.f_0, self.f_1, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_1, self.u_num_displ_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_0, self.u_num_displ_1)
             # f0 is assigned the new state f1.
             # Now assign the old state to the variable which holds the new state after computation.
             # f1 is not used in postprocessing, only f0. This allows for maintaining correct time evolution and
             # memory efficiency. This is needed because in place updates are slow on gpu and jax needs immutability
             # and efficient computation for warp without any synchronization issues. [chatgpt...]
             self.f_0, self.f_1 = self.f_1, self.f_0
+            self.U_num_tilde_0, self.U_num_tilde_1 = self.U_num_tilde_1, self.U_num_tilde_0
+            self.u_num_displ_0, self.u_num_displ_1 = self.u_num_displ_1, self.u_num_displ_0
 
             if i % post_process_interval == 0 or i == num_steps - 1:
                 self.post_process(i)
@@ -119,28 +124,28 @@ class SineWave2D_LED:
     def u_num_exact_y(self, x, y, t):
         return np.cos(4.*np.pi*(x-0.7*t)) * np.sin(2.*np.pi*(y-0.1*t)) * np.cos(4.*np.pi*(t+0.4))
     
-    def U_vx(x: wp.float32, y: wp.float32, t: wp.float32):
-        return 1.6*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4)) + 4.0*wp.pi*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(4.0*t - 0.4)) - 1.2*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))
+    def U_vx(self, x, y, t):
+        return 1.6*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4)) + 4.0*np.pi*np.sin(np.pi*(-1.2*t + 4.0*x))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(4.0*t - 0.4)) - 1.2*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))
     
-    def U_vy(x: wp.float32, y: wp.float32, t: wp.float32):
-        return 2.8*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x)) - 0.2*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6))
+    def U_vy(self, x, y, t):
+        return 2.8*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)) - 4.0*np.pi*np.sin(np.pi*(-0.2*t + 2.0*y))*np.sin(np.pi*(4.0*t + 1.6))*np.cos(np.pi*(-2.8*t + 4.0*x)) - 0.2*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6))
     
-    def U_js(x: wp.float32, y: wp.float32, t: wp.float32):
-        return -wp.c_k_led*(4.0*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))+2.0*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
+    def U_js(self, x, y, t):
+        return -wp.c_k_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))+2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
     
-    def U_jd(x: wp.float32, y: wp.float32, t: wp.float32):
-        return -wp.c_mu_led*(4.0*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))-2.0*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
+    def U_jd(self, x, y, t):
+        return -wp.c_mu_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))-2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
     
-    def U_jxy(x: wp.float32, y: wp.float32, t: wp.float32):
-        return -wp.c_mu_led*(-2.0*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))-4.0*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
+    def U_jxy(self,x, y, t):
+        return -wp.c_mu_led*(-2.0*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4))-4.0*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
 
     def post_process(self, i):
         # Write the results. We'll use JAX compute_backend for the post-processing
         if not isinstance(self.f_0, jnp.ndarray):
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
             f_0 = wp.to_jax(self.f_0)[..., 0]
-            U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
-            u_num_displ = wp.to_jax(self.u_num_displ)[..., 0]
+            U_num_tilde = wp.to_jax(self.U_num_tilde_0)[..., 0]
+            u_num_displ = wp.to_jax(self.u_num_displ_0)[..., 0]
         else:
             f_0 = self.f_0
             U_num_tilde = self.U_num_tilde
@@ -161,38 +166,43 @@ class SineWave2D_LED:
                   "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
                   "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
         
-        save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
-        save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
+        # save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
+        # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
         # Compare solutions on cuts through 2d plane
-        t = np.array((i) * wp.delta_t_led)
+        t = np.float32((i) * wp.delta_t_led)
         grid_size = self.grid_shape[0]
-        plot_index = 123
-        plot_index_num = plot_index - 1
+        plot_index = int(0.179 * grid_size)
+        plot_index_num = plot_index
         domain_size = 1
         delta_x = domain_size/grid_size
-        x_cut = delta_x * (plot_index - 0.5)
-        y_cut = delta_x * (plot_index - 0.5)
+        x_cut = delta_x * (plot_index + 0.5)
+        y_cut = delta_x * (plot_index + 0.5)
         
         x_axis = np.linspace(0, domain_size, num=grid_size)
         y_axis = x_axis
-        # # Plot cut of u_num_x, u_num_y for constant y, x_axis
-        # plt.plot(x_axis, self.u_num_exact_x(x=x_axis, y=y_cut, t=t), label="y = const, u_ex", color="green")
-        # plt.plot(y_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
-        # plt.plot(x_axis, u_num_displ[0, :, plot_index_num], label="y = const, u_num", linestyle="--", color="green")
-        # plt.plot(y_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num", linestyle="--", color="orange")
-        # plt.legend()
-        # plt.draw()
-        # plt.pause(0.001)
+        # Plot cut of u_num_x, u_num_y for constant y, x_axis
+        plt.plot(x_axis, self.u_num_exact_x(x=x_axis, y=y_cut, t=t), label="y = const, u_ex", color="green")
+        plt.plot(y_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
+        plt.plot(x_axis, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
+        plt.plot(y_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num_y", linestyle="--", color="orange")
+        plt.legend()
+        plt.draw()
+        plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
+        plt.pause(1)
+        plt.clf()
 
         # Plot cut of vx, vy for constant y, x_axis
         plt.plot(x_axis, self.U_vx(x=x_axis, y=y_cut, t=t), label="y = const, vx_ex", color="green")
-        plt.plot(y_axis, self.U_vy(x=x_axis, y=y_cut, t=t), label="y = const, vy_ex", color="green")
-        plt.plot(x_axis, U_num_tilde[0, :, plot_index_num], label="y = const, vx_num", linestyle="--", color="orange")
+        plt.plot(y_axis, self.U_vy(x=x_axis, y=y_cut, t=t), label="y = const, vy_ex", color="orange")
+        plt.plot(x_axis, U_num_tilde[0, :, plot_index_num], label="y = const, vx_num", linestyle="--", color="green")
         plt.plot(y_axis, U_num_tilde[1, :, plot_index_num], label="y = const, vy_num", linestyle="--", color="orange")
+        plt.title(f"t = {t:.6f}s, interval {i}")
         plt.legend()
         plt.draw()
-        plt.pause(0.001)
+        plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
+        plt.pause(1)
+        plt.clf()
 
 
         """
@@ -223,10 +233,10 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 400  # Number of grid cells along one dimension
+    grid_size = 20  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 40000  # Number of collision/streaming steps
-    pp_interval = 100  # Post process interval
+    num_steps = 10000  # Number of collision/streaming steps
+    pp_interval = 10  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time

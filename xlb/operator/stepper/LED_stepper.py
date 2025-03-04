@@ -78,7 +78,7 @@ class LinearElastodynamicsStepper(Stepper):
         
         from xlb.helper.initializers import initialize_f_U_num_LED  # TODO: initialze eq for LED
 
-        f_0 , U_0, u_num_displ = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
+        f_0 , U_0, U_1, u_num_displ_0, u_num_displ_1 = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
 
         # Copy f_0 using backend-specific copy to f_1
         if self.compute_backend == ComputeBackend.JAX:
@@ -91,7 +91,7 @@ class LinearElastodynamicsStepper(Stepper):
         # Initialize auxiliary data if needed
         f_0, f_1 = self._initialize_auxiliary_data(self.boundary_conditions, f_0, f_1, bc_mask, missing_mask)
 
-        return f_0, f_1, bc_mask, missing_mask, U_0, u_num_displ
+        return f_0, f_1, bc_mask, missing_mask, U_0, U_1, u_num_displ_0, u_num_displ_1
 
     @classmethod
     def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):  # TODO: initialize the BCs, maybe OK
@@ -299,7 +299,9 @@ class LinearElastodynamicsStepper(Stepper):
             omega: Any,
             timestep: int,
             U_num_tilde: wp.array4d(dtype=Any),
+            U_num_tilde_1: wp.array4d(dtype=Any),
             u_num_displ: wp.array4d(dtype=Any),
+            u_num_displ_1: wp.array4d(dtype=Any),
         ):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
@@ -320,7 +322,7 @@ class LinearElastodynamicsStepper(Stepper):
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
             
             # TODO: 2.c) Prepare displacement solution
-            t = (self.compute_dtype(timestep))* wp.delta_t_led
+            t = self.compute_dtype(float(timestep))* wp.delta_t_led
 
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)
 
@@ -337,13 +339,13 @@ class LinearElastodynamicsStepper(Stepper):
             _f_post_collision = self.collision_LED.warp_functional(_f_post_stream, _feq, omega)
 
             for l in range(5):
-                U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
+                U_num_tilde_1[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
 
             for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
 
             for l in range(2):
-                u_num_displ[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
+                u_num_displ_1[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
 
         return None, kernel
 
@@ -356,11 +358,11 @@ class LinearElastodynamicsStepper(Stepper):
     #     )
     #     return f_0, f_1
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde, u_num_displ):
+    def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde, U_num_tilde_1, u_num_displ, u_num_displ_1):
         wp.launch(
             self.warp_kernel,
-            inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde, u_num_displ],
+            inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde, U_num_tilde_1, u_num_displ, u_num_displ_1],
             dim=f_0.shape[1:],
         )
 
-        return f_0, f_1, U_num_tilde, u_num_displ
+        return f_0, f_1, U_num_tilde, U_num_tilde_1, u_num_displ, u_num_displ_1
