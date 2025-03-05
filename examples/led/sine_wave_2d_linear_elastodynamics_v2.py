@@ -2,7 +2,7 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
-from xlb.operator.stepper import LinearElastodynamicsStepper
+from xlb.operator.stepper import LinearElastodynamicsStepperStream, LinearElastodynamicsStepperCollide
 from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.boundary_condition import DirichletBC_LED  # TODO: Add periodic and Dirichlet BCs.
 from xlb.operator.macroscopic import Macroscopic_LED
@@ -47,7 +47,7 @@ class SineWave2D_LED:
         self.setup_boundary_conditions()
         self.setup_stepper()
         # Initialize fields using the stepper
-        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_0, self.u_num_displ_1 = self.stepper.prepare_fields()
+        self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_1 = self.stepper_collide.prepare_fields()
 
     def define_boundary_indices(self):
         box = self.grid.bounding_box_indices()  # For interior nodes
@@ -65,7 +65,12 @@ class SineWave2D_LED:
         self.boundary_conditions = []
 
     def setup_stepper(self):
-        self.stepper = LinearElastodynamicsStepper(
+        self.stepper_stream = LinearElastodynamicsStepperStream(
+            grid=self.grid,
+            boundary_conditions=self.boundary_conditions,
+            collision_type="BGK_LED",
+        )
+        self.stepper_collide = LinearElastodynamicsStepperCollide(
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
             collision_type="BGK_LED",
@@ -77,46 +82,32 @@ class SineWave2D_LED:
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
         plt.figure()
-        self.f_0, self.U_num_tilde_0, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde_0, self.u_num_displ_0)
+        self.f_0, self.U_num_tilde, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde, self.u_num_displ_0)
         wp.copy(dest=self.f_1, src=self.f_0)
-        wp.copy(self.U_num_tilde_1, self.U_num_tilde_0)
+        # wp.copy(self.U_num_tilde_1, self.U_num_tilde_0)
         wp.copy(self.u_num_displ_1 , self.u_num_displ_0)
-        # for i in range(num_steps):
-            # # Collision
-        # 1.a)
-        t = 0
-        self.U_num_tilde_0 = self.stepper.macroscopic_LED(self.f_0, self.U_num_tilde_0, wp.float32(t))
-        # 1.b) - get displacement solution.
-        self.u_num_displ_0 = self.stepper.displacement_LED(self.U_num_tilde_0, self.u_num_displ_0, self.u_num_displ_1)
-        
-        # 1.c) Get local equilibrium populations
-        feq = self.stepper.equilibrium_LED(self.U_num_tilde_0, self.f_0)
-        # 1.d) Collision step
-        self.f_0 = self.stepper.collision_LED(self.f_0, feq, self.f_1, omega)
-        # self.f_0, self.f_1 = self.f_1, self.f_0
 
-            # # 2. Streaming
-            # self.f_1 = self.stepper.stream_LED(self.f_0, self.f_1)
-            # self.f_0 = self.f_1
-
-
-            # self.u_num_displ = self.stepper.displacement_LED(self.U_num_tilde, self.u_num_displ, self.u_num_displ)
-
-        for i in range(1, num_steps):
-            # f0 is just a copy of the old state here
-            # TODO: get rid of in place updates of u_num_displ and U_num_tilde...
-            self.f_0, self.f_1, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_1, self.u_num_displ_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_0, self.u_num_displ_1)
-            # f0 is assigned the new state f1.
-            # Now assign the old state to the variable which holds the new state after computation.
-            # f1 is not used in postprocessing, only f0. This allows for maintaining correct time evolution and
-            # memory efficiency. This is needed because in place updates are slow on gpu and jax needs immutability
-            # and efficient computation for warp without any synchronization issues. [chatgpt...]
-            self.f_0, self.f_1 = self.f_1, self.f_0
-            self.U_num_tilde_0, self.U_num_tilde_1 = self.U_num_tilde_1, self.U_num_tilde_0
-            self.u_num_displ_0, self.u_num_displ_1 = self.u_num_displ_1, self.u_num_displ_0
-
-            if i % post_process_interval == 0 or i == num_steps - 1:
-                self.post_process(i)
+        for timestep in range(num_steps):
+            # Collision first:
+            self.f_0, self.f_1, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_1)
+            # Streaming second:
+            # self.f_0, self.f_1 = self.f_1, self.f_0
+            self.f_0, self.f_1, self.u_num_displ_0, self.u_num_displ_1 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_1)
+            # Setup new step.
+            # self.f_0, self.f_1 = self.f_1, self.f_0
+            # self.U_num_tilde_0, self.U_num_tilde_1 = self.U_num_tilde_1, self.U_num_tilde_0
+            # self.u_num_displ_0, self.u_num_displ_1 = self.u_num_displ_1, self.u_num_displ_0
+            # # f0 is just a copy of the old state here
+            # # TODO: get rid of in place updates of u_num_displ and U_num_tilde...
+            # self.f_0, self.f_1, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_1, self.u_num_displ_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, i, self.U_num_tilde_0, self.U_num_tilde_1, self.u_num_displ_0, self.u_num_displ_1)
+            # # f0 is assigned the new state f1.
+            # # Now assign the old state to the variable which holds the new state after computation.
+            # # f1 is not used in postprocessing, only f0. This allows for maintaining correct time evolution and
+            # # memory efficiency. This is needed because in place updates are slow on gpu and jax needs immutability
+            # # and efficient computation for warp without any synchronization issues. [chatgpt...]
+            
+            if timestep % post_process_interval == 0 or timestep == num_steps - 1:
+                self.post_process(timestep)
     
     def u_num_exact_x(self, x, y, t):
         return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
@@ -144,7 +135,7 @@ class SineWave2D_LED:
         if not isinstance(self.f_0, jnp.ndarray):
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
             f_0 = wp.to_jax(self.f_0)[..., 0]
-            U_num_tilde = wp.to_jax(self.U_num_tilde_0)[..., 0]
+            U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
             u_num_displ = wp.to_jax(self.u_num_displ_0)[..., 0]
         else:
             f_0 = self.f_0

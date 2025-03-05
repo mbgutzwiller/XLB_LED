@@ -35,11 +35,11 @@ def initialize_f_U_num_LED(f, grid, precision_policy, compute_backend):
 
     elif compute_backend == ComputeBackend.WARP:
         U_0 = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
-        U_1 = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
+        # U_1 = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
         u_num_displ_0 = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
         u_num_displ_1 = grid.create_field(cardinality=5, fill_value=0.0, dtype=precision_policy.compute_precision)
         f = equilibrium(U_0, f)
-    return f, U_0, U_1, u_num_displ_0, u_num_displ_1
+    return f, U_0, u_num_displ_0, u_num_displ_1
 
 class Initializer_LED(Operator):
     def __init__(self, velocity_set=None, precision_policy=None, compute_backend=None):
