@@ -85,14 +85,17 @@ class SineWave2D_LED:
             # # Collision
         # 1.a)
         t = 0
-        self.U_num_tilde_0 = self.stepper.macroscopic_LED(self.f_0, self.U_num_tilde_0, wp.float32(t))
+        self.U_num_tilde_0 = self.stepper.macroscopic_LED(self.f_0, self.U_num_tilde_0, wp.floa32(t))
         # 1.b) - get displacement solution.
-        self.u_num_displ_0 = self.stepper.displacement_LED(self.U_num_tilde_0, self.u_num_displ_0, self.u_num_displ_1)
+        # self.u_num_displ_0 = self.stepper.displacement_LED(self.U_num_tilde_0, self.u_num_displ_0, self.u_num_displ_1)
         
         # 1.c) Get local equilibrium populations
         feq = self.stepper.equilibrium_LED(self.U_num_tilde_0, self.f_0)
         # 1.d) Collision step
         self.f_0 = self.stepper.collision_LED(self.f_0, feq, self.f_1, omega)
+        self.post_process(0)
+        time.sleep(5)
+
         # self.f_0, self.f_1 = self.f_1, self.f_0
 
             # # 2. Streaming
@@ -115,8 +118,9 @@ class SineWave2D_LED:
             self.U_num_tilde_0, self.U_num_tilde_1 = self.U_num_tilde_1, self.U_num_tilde_0
             self.u_num_displ_0, self.u_num_displ_1 = self.u_num_displ_1, self.u_num_displ_0
 
-            if i % post_process_interval == 0 or i == num_steps - 1:
+            if i % post_process_interval == 1 or i == num_steps - 1:
                 self.post_process(i)
+                time.sleep(5)
     
     def u_num_exact_x(self, x, y, t):
         return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
@@ -172,20 +176,21 @@ class SineWave2D_LED:
         # Compare solutions on cuts through 2d plane
         t = np.float32((i) * wp.delta_t_led)  # TODO investigate this
         grid_size = self.grid_shape[0]
-        plot_index = int(0.379 * grid_size)
+        plot_index = int(0.179 * grid_size)
         plot_index_num = plot_index
         domain_size = 1
         delta_x = domain_size/grid_size
         x_cut = delta_x * (plot_index + 0.5)
         y_cut = delta_x * (plot_index + 0.5)
         
-        x_axis = np.linspace(0, domain_size, num=grid_size)
-        y_axis = x_axis
+        x_axis = np.linspace(delta_x/2, domain_size-delta_x/2, num=grid_size)
+        # x_axis_exact = np.linspace(0, domain_size, num=grid_size)
         # Plot cut of u_num_x, u_num_y for constant y, x_axis
         plt.plot(x_axis, self.u_num_exact_x(x=x_axis, y=y_cut, t=t), label="y = const, u_ex", color="green")
-        plt.plot(y_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
+        plt.plot(x_axis, self.u_num_exact_y(x=x_axis, y=y_cut, t=t), label="x = const, u_ex", color="orange")
         plt.plot(x_axis, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
-        plt.plot(y_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num_y", linestyle="--", color="orange")
+        plt.plot(x_axis, u_num_displ[1, :, plot_index_num], label="y = const, u_num_y", linestyle="--", color="orange")
+        plt.title(f"t = {t:.6f}s, interval {i}")
         plt.legend()
         plt.draw()
         # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
@@ -195,9 +200,9 @@ class SineWave2D_LED:
 
         # Plot cut of vx, vy for constant y, x_axis
         plt.plot(x_axis, self.U_vx(x=x_axis, y=y_cut, t=t), label="y = const, vx_ex", color="green")
-        plt.plot(y_axis, self.U_vy(x=x_axis, y=y_cut, t=t), label="y = const, vy_ex", color="orange")
+        plt.plot(x_axis, self.U_vy(x=x_axis, y=y_cut, t=t), label="y = const, vy_ex", color="orange")
         plt.plot(x_axis, U_num_tilde[0, :, plot_index_num], label="y = const, vx_num", linestyle="--", color="green")
-        plt.plot(y_axis, U_num_tilde[1, :, plot_index_num], label="y = const, vy_num", linestyle="--", color="orange")
+        plt.plot(x_axis, U_num_tilde[1, :, plot_index_num], label="y = const, vy_num", linestyle="--", color="orange")
         plt.title(f"t = {t:.6f}s, interval {i}")
         plt.legend()
         plt.draw()
@@ -237,8 +242,8 @@ if __name__ == "__main__":
     # # Running the simulation
     grid_size = 80  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 200  # Number of collision/streaming steps
-    pp_interval = 1  # Post process interval
+    num_steps = 320  # Number of collision/streaming steps
+    pp_interval = 50  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time

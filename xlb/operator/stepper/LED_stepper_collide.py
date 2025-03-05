@@ -20,7 +20,7 @@ from xlb.operator.boundary_condition.boundary_condition_registry import boundary
 from xlb.operator.collision import ForcedCollision
 from xlb.operator.boundary_masker import IndicesBoundaryMasker, MeshBoundaryMasker
 from xlb.helper import check_bc_overlaps
-from xlb.helper.LED_solver import create_LED_fields
+from xlb.helper.LED_solver_v2 import create_LED_fields
 
 
 class LinearElastodynamicsStepperCollide(Stepper):
@@ -68,7 +68,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
                 - missing_mask: Mask indicating which populations are missing at boundary nodes
         """
         # Create fields using the helper function
-        _, f_0, f_1, missing_mask, bc_mask = create_LED_fields(
+        _, f_0, f_1, f_temp, missing_mask, bc_mask = create_LED_fields(
             grid=self.grid, compute_backend=self.compute_backend, precision_policy=self.precision_policy
         )
 
@@ -76,7 +76,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         # if initializer is not None:
         #     f_0 = initializer(self.grid, self.velocity_set, self.precision_policy, self.compute_backend)
         
-        from xlb.helper.initializers import initialize_f_U_num_LED  # TODO: initialze eq for LED
+        from xlb.helper.initializers_v2 import initialize_f_U_num_LED  # TODO: initialze eq for LED
 
         f_0 , U_0, u_num_displ_0, u_num_displ_1 = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
 
@@ -91,7 +91,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         # Initialize auxiliary data if needed
         f_0, f_1 = self._initialize_auxiliary_data(self.boundary_conditions, f_0, f_1, bc_mask, missing_mask)
 
-        return f_0, f_1, bc_mask, missing_mask, U_0, u_num_displ_0, u_num_displ_1
+        return f_0, f_1, f_temp, bc_mask, missing_mask, U_0, u_num_displ_0, u_num_displ_1
 
     @classmethod
     def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):  # TODO: initialize the BCs, maybe OK
@@ -283,7 +283,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         @wp.kernel
         def kernel(
             f_0: wp.array4d(dtype=Any),
-            f_1: wp.array4d(dtype=Any),
+            f_star: wp.array4d(dtype=Any),
             bc_mask: wp.array4d(dtype=Any),
             omega: Any,
             timestep: int,
@@ -294,12 +294,9 @@ class LinearElastodynamicsStepperCollide(Stepper):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
 
-            _boundary_id = bc_mask[0, index[0], index[1], index[2]]
-            if _boundary_id == wp.uint8(255):
-                return
             
             # TODO: remove U_num_tilde from get thread
-            _f0_thread, _f1_thread, _uxy_thread = get_thread_data(f_0, f_1, index, u_num_displ_0)
+            _f0_thread, _fstar_thread, _uxy_thread = get_thread_data(f_0, f_star, index, u_num_displ_0)
             _f_post_stream = _f0_thread
 
             t = self.compute_dtype(timestep)* wp.delta_t_led
@@ -320,7 +317,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
                 U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
 
             for l in range(20):
-                f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
+                f_star[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
 
             for l in range(2):
                 u_num_displ_1[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
@@ -336,11 +333,11 @@ class LinearElastodynamicsStepperCollide(Stepper):
     #     )
     #     return f_0, f_1
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_0, f_1, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1):
+    def warp_implementation(self, f_0, f_star, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1):
         wp.launch(
             self.warp_kernel,
-            inputs=[f_0, f_1, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1],
+            inputs=[f_0, f_star, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1],
             dim=f_0.shape[1:],
         )
 
-        return f_0, f_1, U_num_tilde, u_num_displ_0, u_num_displ_1
+        return f_0, f_star, U_num_tilde, u_num_displ_1

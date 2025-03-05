@@ -316,7 +316,7 @@ class LinearElastodynamicsStepper(Stepper):
 
             # TODO: remove U_num_tilde from get thread
             _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread = get_thread_data(f_0, f_1, missing_mask, index, u_num_displ, U_num_tilde)
-            _f_post_collision = _f0_thread
+            _f_post_collision = _f1_thread
 
             # 2.b) apply post streaming BCs
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
