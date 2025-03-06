@@ -76,7 +76,7 @@ class Stream_LED(Operator):
                     # impose periodicity for out of bound values
                     if pull_index[d] < 0:
                         pull_index[d] = f.shape[d + 1] - 1
-                        print(pull_index[d])
+                        # print(pull_index[d])
                     elif pull_index[d] >= f.shape[d + 1]:
                         pull_index[d] = 0
 

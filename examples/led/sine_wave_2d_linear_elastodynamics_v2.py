@@ -215,8 +215,8 @@ class SineWave2D_LED:
         plt.plot(x_axis_num, self.u_num_exact_y(x=y_cut, y=x_axis_num, t=t), label="x = const, u_ex", color="orange")
         plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
         plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="orange")
-        print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
-        print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
+        # print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
+        # print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
         plt.grid()
         plt.title(f"t = {t:.6f}s, interval {i}")
         plt.legend()
@@ -285,7 +285,7 @@ if __name__ == "__main__":
     grid_size = 128  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = 320  # Number of collision/streaming steps
-    pp_interval = 1  # Post process interval
+    pp_interval = 20  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
