@@ -7,24 +7,6 @@ import warp as wp
 from typing import Any
 
 
-
-def initialize_eq(f, grid, velocity_set, precision_policy, compute_backend, rho=None, u=None):
-    if rho is None:
-        rho = grid.create_field(cardinality=1, fill_value=1.0, dtype=precision_policy.compute_precision)
-    if u is None:
-        u = grid.create_field(cardinality=velocity_set.d, fill_value=0.0, dtype=precision_policy.compute_precision)
-    equilibrium = QuadraticEquilibrium()
-
-    if compute_backend == ComputeBackend.JAX:
-        f = equilibrium(rho, u)
-
-    elif compute_backend == ComputeBackend.WARP:
-        f = equilibrium(rho, u, f)
-
-    del rho, u
-
-    return f
-
 def initialize_f_U_num_LED(f, grid, precision_policy, compute_backend):
     if f is None:
         U_0 = grid.create_field(cardinality=20, fill_value=0.0, dtype=precision_policy.compute_precision)
@@ -54,7 +36,7 @@ class Initializer_LED(Operator):
         # Analytical functions to set initial f correctly (non trivial in contrast to fluid LBM)
         @wp.func
         def u_num_displ(x: wp.float32, y: wp.float32, t: wp.float32):
-            _u_num_displ = _u_num_displ_vector_vec(wp.float32(0))
+            _u_num_displ = _u_num_displ_vector_vec(0.)
             _u_num_displ[0] = wp.sin(4.*wp.pi*(x-0.3*t)) * wp.cos(2.*wp.pi*(y-0.8*t)) * wp.sin(4.*wp.pi*(t-0.1))
             _u_num_displ[1] = wp.cos(4.*wp.pi*(x-0.7*t)) * wp.sin(2.*wp.pi*(y-0.1*t)) * wp.cos(4.*wp.pi*(t+0.4))
             return _u_num_displ
@@ -126,8 +108,8 @@ class Initializer_LED(Operator):
         def initial_conditions_v2_kernel(U_num_tilde: wp.array4d(dtype=Any), f: wp.array4d(dtype=Any), u_num_displ_out: wp.array4d(dtype=Any)):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
-            x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * (wp.delta_x_led)
-            y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * (wp.delta_x_led)
+            x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
+            y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
             t = self.compute_dtype(0.0)
             #evaluate relevant properties from analytical solutions
             _u_num_displ = u_num_displ(x, y, t)

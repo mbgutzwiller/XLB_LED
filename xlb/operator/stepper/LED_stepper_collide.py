@@ -306,7 +306,10 @@ class LinearElastodynamicsStepperCollide(Stepper):
             _U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream, index, t)
 
             # 1.b) - get displacement solution.
+            # if t > 0:
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde, _uxy_thread)
+            # else:
+                # _u_num_displ = _uxy_thread
             
             # 1.c) Get local equilibrium populations
             _feq = self.equilibrium_LED.warp_functional(_U_num_tilde)
