@@ -109,6 +109,7 @@ class SineWave2D_LED:
             wp.synchronize_device()
             if timestep % post_process_interval == 0 or timestep == num_steps - 1:
                 self.post_process(timestep)
+                time.sleep(1)
             # print("Now streaming")
             
             # Streaming second:
@@ -117,7 +118,7 @@ class SineWave2D_LED:
             # self.f_star = self.f_0
             wp.synchronize_device()
             # Setup new step.
-            self.f_0, self.f_1 = self.f_1, self.f_0
+            self.f_0 = self.f_1
             # self.U_num_tilde_0, self.U_num_tilde_1 = self.U_num_tilde_1, self.U_num_tilde_0
             # self.u_num_displ_0, self.u_num_displ_1 = self.u_num_displ_1, self.u_num_displ_0
             # # f0 is just a copy of the old state here
@@ -157,7 +158,8 @@ class SineWave2D_LED:
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
             wp.synchronize_device()
             wp.synchronize()
-            U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
+            U_num_tilde = wp.to_jax(self.stepper_collide.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(0)))[..., 0]
+            # U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
             u_num_displ = wp.to_jax(self.u_num_displ_1)[..., 0]
 
             
@@ -187,7 +189,8 @@ class SineWave2D_LED:
         # Compare solutions on cuts through 2d plane
         t = np.float32((i) * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
-        plot_index = int(0.25 * grid_size)
+        plot_index = int(0.3 * (grid_size))
+        assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting index invalid"
         plot_index_num = plot_index
         domain_size = 1
         delta_x = domain_size/grid_size
@@ -210,23 +213,23 @@ class SineWave2D_LED:
             u_num_displ[0, :, plot_index_num]
         ])
 
-        plt.plot(x_extended, u_extended_ex, color="grey")
-        plt.plot(x_extended, u_extended_num, color="pink", linestyle = "--")
+        # plt.plot(x_extended, u_extended_ex, color="grey")
+        # plt.plot(x_extended, u_extended_num, color="pink", linestyle = "--")
         
-        plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), label="y = const, u_ex", color="green")
-        plt.plot(x_axis_num, self.u_num_exact_y(x=y_cut, y=x_axis_num, t=t), label="x = const, u_ex", color="orange")
-        plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
-        plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="orange")
-        # print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
-        # print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
-        plt.grid()
-        plt.title(f"t = {t:.6f}s, interval {i}")
-        plt.legend()
-        plt.draw()
-        plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
+        # plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), label="y = const, u_ex", color="green")
+        # plt.plot(x_axis_num, self.u_num_exact_y(x=y_cut, y=x_axis_num, t=t), label="x = const, u_ex", color="orange")
+        # plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
+        # plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="orange")
+        # # print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
+        # # print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
+        # plt.grid()
+        # plt.title(f"t = {t:.6f}s, interval {i}")
+        # plt.legend()
+        # plt.draw()
+        # # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
         # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
-        plt.pause(0.0001)
-        plt.clf()
+        # plt.pause(0.0001)
+        # plt.clf()
 
         U_extended_ex = np.concatenate([
             self.U_vx(x=x_axis_num, y=y_cut, t=t), 
@@ -238,8 +241,8 @@ class SineWave2D_LED:
             U_num_tilde[0, :, plot_index_num]
         ])
 
-        plt.plot(x_extended, U_extended_ex, color="grey")
-        plt.plot(x_extended, U_extended_num, color="pink", linestyle = "--")
+        # plt.plot(x_extended, U_extended_ex, color="grey")
+        # plt.plot(x_extended, U_extended_num, color="pink", linestyle = "--")
 
         # Plot cut of vx, vy for constant y, x_axis
         plt.plot(x_axis_num, self.U_vx(x=x_axis_num, y=y_cut, t=t), label="y = const, vx_ex", color="green")
@@ -250,8 +253,8 @@ class SineWave2D_LED:
         plt.grid()
         plt.legend()
         plt.draw()
-        plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
-        # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_vx_vy_figure", dpi=300)
+        # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
+        plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_vx_vy_figure", dpi=300)
         plt.pause(0.0001)
         plt.clf()
 
@@ -287,7 +290,7 @@ if __name__ == "__main__":
     grid_size = 80  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = 320  # Number of collision/streaming steps
-    pp_interval = 1  # Post process interval
+    pp_interval = 20  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
