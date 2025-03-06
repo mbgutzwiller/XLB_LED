@@ -155,9 +155,11 @@ class SineWave2D_LED:
         # Write the results. We'll use JAX compute_backend for the post-processing
         if not isinstance(self.f_0, jnp.ndarray):
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
-            print(type(self.U_num_tilde))
+            wp.synchronize_device()
+            wp.synchronize()
             U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
             u_num_displ = wp.to_jax(self.u_num_displ_1)[..., 0]
+
             
         # else:
         #     f_0 = self.f_0
@@ -183,9 +185,9 @@ class SineWave2D_LED:
         # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
         # Compare solutions on cuts through 2d plane
-        t = np.float32(i * wp.delta_t_led)  #
+        t = np.float32((i) * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
-        plot_index = int(0.159 * grid_size)
+        plot_index = int(0.25 * grid_size)
         plot_index_num = plot_index
         domain_size = 1
         delta_x = domain_size/grid_size
@@ -282,10 +284,10 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 128  # Number of grid cells along one dimension
+    grid_size = 80  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = 320  # Number of collision/streaming steps
-    pp_interval = 20  # Post process interval
+    pp_interval = 1  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
