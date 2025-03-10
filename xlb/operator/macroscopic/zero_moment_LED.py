@@ -17,36 +17,35 @@ class ZeroMoment_LED(Operator):
     # def jax_implementation(self, f):
     #     # return jnp.sum(f, axis=0, keepdims=True)
     #     Nx, Ny = f.shape[1], f.shape[2]
-    #     return f.reshape(4, 5, Nx, Ny).sum(axis=0)
+    #     return f.reshape(4, 5, Nx, Ny)sum(axis=0)
 
     def _construct_warp(self):
         _f_vec = wp.vec(20, dtype=self.compute_dtype)
         _u_num_vec = wp.vec(5, dtype=self.compute_dtype)
-        _x_y_vec = wp.vec(2, self.compute_dtype)
-        _B_vec = wp.vec(2, self.compute_dtype)
+        _x_y_vec = wp.vec(2, dtype=self.compute_dtype)
+        _B_vec = wp.vec(2, dtype=self.compute_dtype)
 
         @wp.func
         def functional(f: _f_vec, index: wp.vec3i, t: wp.float32):
             # Target manufactured solution
-            
             loc = _x_y_vec()
             loc[0] = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
             loc[1] = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
-
+            # @(t,x,y)[wp.pi**2.*wp.cos(wp.pi*(t*(3.0./1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t*(4.0./5.0)-y)*2.0)*wp.cos(wp.pi*(t-1.0./1.0e+1)*4.0)*(-4.8e+1./5.0)-wp.pi**2.*wp.cos(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t*(7.0./1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t+2.0./5.0)*4.0)*(4.4e+1./5.0)+wp.pi**2.*wp.cos(wp.pi*(t*(3.0./1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t*(4.0./5.0)-y)*2.0)*wp.sin(wp.pi*(t-1.0./1.0e+1)*4.0)*(9.6e+1./2.5e+1)-wp.pi**2.*wp.cos(wp.pi*(t*(4.0./5.0)-y)*2.0)*wp.sin(wp.pi*(t*(3.0./1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t-1.0./1.0e+1)*4.0)*(2.8e+1./5.0)+wp.pi**2.*wp.sin(wp.pi*(t*(3.0./1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t*(4.0./5.0)-y)*2.0)*wp.cos(wp.pi*(t-1.0./1.0e+1)*4.0)*(6.4e+1./5.0);wp.pi**2.*wp.cos(wp.pi*(t*(7.0./1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t+2.0./5.0)*4.0)*(8.0./5.0)+wp.pi**2.*wp.cos(wp.pi*(t*(7.0./1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t/1.0e+1-y)*2.0)*wp.cos(wp.pi*(t+2.0./5.0)*4.0)*(2.87e+2./2.5e+1)+wp.pi**2.*wp.cos(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t*(7.0./1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t+2.0./5.0)*4.0)*(2.8e+1./2.5e+1)-wp.pi**2.*wp.cos(wp.pi*(t*(3.0./1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t*(4.0./5.0)-y)*2.0)*wp.sin(wp.pi*(t-1.0./1.0e+1)*4.0)*(4.4e+1./5.0)-wp.pi**2.*wp.sin(wp.pi*(t*(7.0./1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t+2.0./5.0)*4.0)*(1.12e+2./5.0)]
             B = _B_vec()
-            B[0] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))) - wp.c_mu_led**2.0*(8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))) + 12.8*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t - 0.4)) - 3.84*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 20.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1])) - 9.6*wp.pi**2.0*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t - 0.4))
-            B[1] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) + wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) + 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) - 22.4*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t + 1.6)) - 1.12*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 23.88*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6)) + 1.6*wp.pi**2.0*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))
+            B[0] = wp.pi**2.*wp.cos(wp.pi*(t*(3.0/1.0e+1)-loc[0])*4.0)*wp.cos(wp.pi*(t*(4.0/5.0)-loc[1])*2.0)*wp.cos(wp.pi*(t-1.0/1.0e+1)*4.0)*(-4.8e+1/5.0)-wp.pi**2.*wp.cos(wp.pi*(t/1.0e+1-loc[1])*2.0)*wp.sin(wp.pi*(t*(7.0/1.0e+1)-loc[0])*4.0)*wp.cos(wp.pi*(t+2.0/5.0)*4.0)*(4.4e+1/5.0)+wp.pi**2.*wp.cos(wp.pi*(t*(3.0/1.0e+1)-loc[0])*4.0)*wp.sin(wp.pi*(t*(4.0/5.0)-loc[1])*2.0)*wp.sin(wp.pi*(t-1.0/1.0e+1)*4.0)*(9.6e+1/2.5e+1)-wp.pi**2.*wp.cos(wp.pi*(t*(4.0/5.0)-loc[1])*2.0)*wp.sin(wp.pi*(t*(3.0/1.0e+1)-loc[0])*4.0)*wp.sin(wp.pi*(t-1.0/1.0e+1)*4.0)*(2.8e+1/5.0)+wp.pi**2.*wp.sin(wp.pi*(t*(3.0/1.0e+1)-loc[0])*4.0)*wp.sin(wp.pi*(t*(4.0/5.0)-loc[1])*2.0)*wp.cos(wp.pi*(t-1.0/1.0e+1)*4.0)*(6.4e+1/5.0)
+            B[1] = wp.pi**2.*wp.cos(wp.pi*(t*(7.0/1.0e+1)-loc[0])*4.0)*wp.cos(wp.pi*(t/1.0e+1-loc[1])*2.0)*wp.sin(wp.pi*(t+2.0/5.0)*4.0)*(8.0/5.0)+wp.pi**2.*wp.cos(wp.pi*(t*(7.0/1.0e+1)-loc[0])*4.0)*wp.sin(wp.pi*(t/1.0e+1-loc[1])*2.0)*wp.cos(wp.pi*(t+2.0/5.0)*4.0)*(2.87e+2/2.5e+1)+wp.pi**2.*wp.cos(wp.pi*(t/1.0e+1-loc[1])*2.0)*wp.sin(wp.pi*(t*(7.0/1.0e+1)-loc[0])*4.0)*wp.cos(wp.pi*(t+2.0/5.0)*4.0)*(2.8e+1/2.5e+1)-wp.pi**2.*wp.cos(wp.pi*(t*(3.0/1.0e+1)-loc[0])*4.0)*wp.sin(wp.pi*(t*(4.0/5.0)-loc[1])*2.0)*wp.sin(wp.pi*(t-1.0/1.0e+1)*4.0)*(4.4e+1/5.0)-wp.pi**2.*wp.sin(wp.pi*(t*(7.0/1.0e+1)-loc[0])*4.0)*wp.sin(wp.pi*(t/1.0e+1-loc[1])*2.0)*wp.sin(wp.pi*(t+2.0/5.0)*4.0)*(1.12e+2/5.0)
             # B[0] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))) - wp.c_mu_led**2.0*(8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))) + 12.8*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t - 0.4)) - 3.84*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 20.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1])) - 9.6*wp.pi**2.0*wp.cos(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t - 0.4))
             # B[1] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) + wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*loc[0])) + 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6))) - 22.4*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.sin(wp.pi*(4.0*t + 1.6)) - 1.12*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(4.0*t + 1.6)) - 23.88*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*loc[1]))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(4.0*t + 1.6)) + 1.6*wp.pi**2.0*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*loc[0]))*wp.cos(wp.pi*(-0.2*t + 2.0*loc[1]))
 
-            U_num_tilde = _u_num_vec()
+            _U_num_tilde = _u_num_vec(0.)
 
             for l in range(4):
                 for m in range(5):                        
-                    U_num_tilde[m] += f[l * 5 + m]
+                    _U_num_tilde[m] += f[l * 5 + m]
             for m in range(2):
-                U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
-            return U_num_tilde
+                _U_num_tilde[m] += B[m] * wp.delta_t_led * self.compute_dtype(0.5)
+            return _U_num_tilde
 
         @wp.kernel
         def kernel(

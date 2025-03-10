@@ -2,9 +2,9 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
-from xlb.operator.stepper import LinearElastodynamicsStepperStream, LinearElastodynamicsStepperCollide
 from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.boundary_condition import DirichletBC_LED  # TODO: Add periodic and Dirichlet BCs.
+from xlb.operator.stepper import LinearElastodynamicsStepperStream, LinearElastodynamicsStepperCollide
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set  # Done.
@@ -15,6 +15,8 @@ import time
 from xlb.helper.initializers_v2 import Initializer_LED
 import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
+from xlb.operator.displacement.displacement_LED import Displacement_LED
+
 
 
 plt.ion()
@@ -24,7 +26,7 @@ plt.ion()
 
 
 class SineWave2D_LED:
-    def __init__(self, grid_shape, velocity_set, compute_backend, precision_policy):
+    def __init__(self, omega, grid_shape, velocity_set, compute_backend, precision_policy):
         # initialize compute_backend
         xlb.init(
             velocity_set=velocity_set,
@@ -36,7 +38,7 @@ class SineWave2D_LED:
         self.velocity_set = velocity_set
         self.compute_backend = compute_backend
         self.precision_policy = precision_policy
-        self.omega = 2.
+        self.omega = omega
         self.boundary_conditions = []
         # self.prescribed_vel = prescribed_vel
 
@@ -50,7 +52,14 @@ class SineWave2D_LED:
         self.setup_boundary_conditions()
         self.setup_stepper()
         # Initialize fields using the stepper
-        self.f_0, self.f_1, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_collide.prepare_fields()
+        self.f_0, self.f_1, self.f_eq, self.f_1, self.bc_mask, self.missing_mask, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_collide.prepare_fields()
+    
+    def setup_stepper(self):
+        self.stepper_collide = LinearElastodynamicsStepperCollide(
+            grid=self.grid,
+            boundary_conditions=self.boundary_conditions,
+            collision_type="BGK_LED",
+        )
 
     def define_boundary_indices(self):
         box = self.grid.bounding_box_indices()  # For interior nodes
@@ -67,47 +76,54 @@ class SineWave2D_LED:
         # self.boundary_conditions = [bc_walls]
         self.boundary_conditions = []
 
-    def setup_stepper(self):
-        self.stepper_stream = LinearElastodynamicsStepperStream(
-            grid=self.grid,
-            boundary_conditions=self.boundary_conditions,
-            collision_type="BGK_LED",
-        )
-        self.stepper_collide = LinearElastodynamicsStepperCollide(
-            grid=self.grid,
-            boundary_conditions=self.boundary_conditions,
-            collision_type="BGK_LED",
-        )
 
     def run(self, num_steps, post_process_interval=100):
         # TODO: initialize U_num_here
         self.stream_LED = Stream_LED(self.velocity_set, self.precision_policy, self.compute_backend)
+        self.equilibrium_LED = Equilibrium_LED(self.velocity_set, self.precision_policy, self.compute_backend)
+        self.macroscopic_LED = Macroscopic_LED(self.velocity_set, self.precision_policy, self.compute_backend)
+        self.displacement_LED = Displacement_LED((self.velocity_set, self.precision_policy, self.compute_backend))
         initializer = Initializer_LED(velocity_set=self.velocity_set,
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
-        # plt.figure()
+        plt.figure()
         self.f_0, self.U_num_tilde, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde, self.u_num_displ_0)
-        wp.synchronize()
-        wp.synchronize_device()
-        self.cumulative_error = 0
+        # wp.synchronize()
+        # wp.synchronize_device()
+        # self.U_num_tilde = self.macroscopic_LED(self.f_0, self.U_num_tilde, self.stream_LED.compute_dtype(0))  # get macorscopic, used for feq
+        # self.post_process(0)
+        # time.sleep(0.1)
+
 
         for timestep in range(num_steps):
-            # Collision
-            self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
-
-            # Postprocessing: Show plot or calculate error
+            t = wp.float32(timestep) * wp.delta_t_led
+            self.U_num_tilde = self.macroscopic_LED(self.f_0, self.U_num_tilde, t)  # get macorscopic, used for feq
+            # wp.synchronize()
+            # wp.synchronize_device()
             if timestep % post_process_interval == 0 or timestep == num_steps - 1:
+                # time.sleep(1)
+                plt.clf()
                 self.post_process(timestep)
-            
-            # Streaming
+                # time.sleep(1)
+            wp.synchronize()
+            wp.synchronize_device()
+            self.f_eq = self.equilibrium_LED(self.U_num_tilde, self.f_eq)  # store feq in f1
+            wp.synchronize()
+            wp.synchronize_device()
+            self.f_1 = self.stepper_collide.collision_LED(self.f_0, self.f_eq, self.f_1, omega)  # collided f is f1
+            wp.synchronize()
+            wp.synchronize_device()
+            self.f_0 = self.f_1
+            wp.synchronize()
+            wp.synchronize_device()
+
             self.f_1 = self.stream_LED(self.f_0, self.f_1)
-            self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
-        
-        final_error = self.cumulative_error * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
-        final_error = np.sqrt(final_error)
-        return final_error
+            wp.synchronize()
+            wp.synchronize_device()
+            self.f_0 = self.f_1
 
 
+    
     def u_num_exact_x(self, x, y, t):
         return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
     
@@ -129,7 +145,7 @@ class SineWave2D_LED:
     def U_jxy(self,x, y, t):
         return -wp.c_mu_led*(-2.0*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4))-4.0*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
 
-    def post_process(self, i, show_plot=False):
+    def post_process(self, i):
         # Write the results. We'll use JAX compute_backend for the post-processing
         if not isinstance(self.f_0, jnp.ndarray):
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
@@ -137,15 +153,15 @@ class SineWave2D_LED:
             wp.synchronize()
             # U_num_tilde = wp.to_jax(self.stepper_collide.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(0)))[..., 0]
             U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
-            u_num_displ = wp.to_jax(self.u_num_displ_1)[..., 0]
+            u_num_displ = wp.to_jax(self.u_num_displ_0)[..., 0]
             # f_0 = wp.to_jax(self.f_0)[..., 0]
             # U_num_tilde = self.stepper_collide.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(i*wp.delta_t_led))
             # U_num_tilde = wp.to_jax(U_num_tilde)[..., 0]
 
 
 
-        # print("Contains NaNs:", np.isnan(U_num_tilde).any())
-        # print("Contains Inf:", np.isinf(U_num_tilde).any())
+        print("Contains NaNs:", np.isnan(U_num_tilde).any())
+        print("Contains Inf:", np.isinf(U_num_tilde).any())
 
         fields = {"u_x": u_num_displ[0],
                   "u_y": u_num_displ[1],
@@ -160,7 +176,7 @@ class SineWave2D_LED:
         # Compare solutions on cuts through 2d plane
         t = np.float32(i * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
-        plot_index = int(0 * (grid_size-1))
+        plot_index = int(0.5 * (grid_size-1))
         assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting index invalid"
         plot_index_num = plot_index
         domain_size = 1
@@ -184,52 +200,63 @@ class SineWave2D_LED:
             u_num_displ[0, :, plot_index_num]
         ])
 
-        if show_plot:
-            plt.clf()
-            plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), label="y = const, u_ex", color="green")
-            plt.plot(x_axis_num, self.u_num_exact_y(x=y_cut, y=x_axis_num, t=t), label="x = const, u_ex", color="orange")
-            plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
-            plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="orange")
-            # print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
-            # print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
-            plt.grid()
-            plt.ylim(-1, 1)
-            plt.title(f"t = {t:.6f}s, interval {i}")
-            plt.legend()
-            plt.draw()
-            # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
-            plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
-            plt.pause(0.0001)
+        # plt.plot(x_extended, u_extended_ex, color="grey")
+        # plt.plot(x_extended, u_extended_num, color="pink", linestyle = "--")
+        
+        # plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), label="y = const, u_ex", color="green")
+        # plt.plot(x_axis_num, self.u_num_exact_y(x=y_cut, y=x_axis_num, t=t), label="x = const, u_ex", color="orange")
+        # plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
+        # plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="orange")
+        # # print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
+        # # print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
+        # plt.grid()
+        # plt.ylim(-1, 1)
+        # plt.title(f"t = {t:.6f}s, interval {i}")
+        # plt.legend()
+        # plt.draw()
+        # # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
+        # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
+        # plt.pause(0.0001)
+        # # # plt.clf()
 
-            # # Plot cut of vx, vy for constant y, x_axis
-            # plt.clf()
-            # plt.plot(x_axis_num, self.U_vx(x=x_axis_num, y=y_cut, t=t), label="y = const, vx_ex", color="green")
-            # plt.plot(x_axis_num, self.U_vy(x=x_axis_num, y=y_cut, t=t), label="y = const, vy_ex", color="orange")
-            # plt.plot(x_axis_num, U_num_tilde[0, :, plot_index_num], label="y = const, vx_num", linestyle="--", color="green")
-            # plt.plot(x_axis_num, U_num_tilde[1, :, plot_index_num], label="y = const, vy_num", linestyle="--", color="orange")
-            # plt.title(f"t = {t:.6f}s, interval {i}")
-            # plt.grid()
-            # plt.legend()
-            # plt.draw()
-            # # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
-            # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_vx_vy_figure", dpi=300)
-            # plt.pause(0.0001)
+        U_extended_ex = np.concatenate([
+            self.U_vx(x=x_axis_num, y=y_cut, t=t), 
+            self.U_vx(x=x_axis_num + 1, y=y_cut, t=t)
+        ])
+
+        U_extended_num = np.concatenate([
+            U_num_tilde[0, :, plot_index_num], 
+            U_num_tilde[0, :, plot_index_num]
+        ])
+
+        # plt.plot(x_extended, U_extended_ex, color="grey")
+        # plt.plot(x_extended, U_extended_num, color="pink", linestyle = "--")
+
+        # Plot cut of vx, vy for constant y, x_axis
+        plt.plot(x_axis_num, self.U_vx(x=x_axis_num, y=y_cut, t=t), label="y = const, vx_ex", color="green")
+        plt.plot(x_axis_num, self.U_vy(x=x_axis_num, y=y_cut, t=t), label="y = const, vy_ex", color="orange")
+        plt.plot(x_axis_num, U_num_tilde[0, :, plot_index_num], label="y = const, vx_num", linestyle="--", color="green")
+        plt.plot(x_axis_num, U_num_tilde[1, :, plot_index_num], label="y = const, vy_num", linestyle="--", color="orange")
+        plt.title(f"t = {t:.6f}s, interval {i}")
+        plt.grid()
+        plt.legend()
+        plt.draw()
+        # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
+        plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_vx_vy_figure", dpi=300)
+        plt.pause(0.0001)
+        # plt.clf()
 
 
         """
-        Approximate error calculation
+        Exact error calculation
         """
-        u_ex = self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t)
-        u_num = u_num_displ[0, :, plot_index_num]
-        u_error = (u_ex - u_num)**2
-        u_error = np.sum(u_error)
-        self.cumulative_error += u_error
+
         # u_exact_x = np.array([np.array(self.u_num_exact_x(x=x_axis, y=_y, t=t)) for _y in x_axis])
         # u_exact_y = np.array([np.array(self.u_num_exact_y(x=x_axis, y=_y, t=t)) for _y in x_axis])
         # # print(u_exact_x.shape)
         # error_x = u_num_displ[0] - u_exact_x
         # error_sum = 0
-        # for i in range(grid_size):
+        # for i in range(error_x.shape[0]):
         #     for j in range(error_x.shape[0]):
         #         error_sum += error_x[i, j]**2
         # error_sum *= wp.delta_t_led * wp.delta_x_led ** 2 * 40000
@@ -248,9 +275,9 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 160  # Number of grid cells along one dimension
+    grid_size = 32  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 400  # Number of collision/streaming steps
+    num_steps = 128  # Number of collision/streaming steps
     pp_interval = 1  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
@@ -285,8 +312,9 @@ if __name__ == "__main__":
     # Change velocity set to D2Q4
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
+    omega = 2.
     stime = time.time()
-    simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
+    simulation = SineWave2D_LED(omega, grid_shape, velocity_set, compute_backend, precision_policy)
     simulation.run(num_steps=num_steps, post_process_interval=pp_interval)
     print(f"took {time.time() - stime:.2} seconds")
 

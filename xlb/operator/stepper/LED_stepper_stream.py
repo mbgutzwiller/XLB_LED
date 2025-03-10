@@ -264,35 +264,9 @@ class LinearElastodynamicsStepperStream(Stepper):
 
             return _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread
 
-        # @wp.func
-        # def apply_aux_recovery_bc(
-        #     ind_feqex: Any,
-        #     _boundary_id: Any,
-        #     _missing_mask: Any,
-        #     f_0: Any,
-        #     _f1_thread: Any,
-        # ):
-        #     # Note:
-        #     # In XLB, the BC auxiliary data (e.g. prescribed values of pressure or normal velocity) are stored in (i) central index of f_1 and/or
-        #     # (ii) missing directions of f_1. Some BCs may or may not need all these available storage space. This function checks whether
-        #     # the BC needs recovery of auxiliary data and then recovers the information for the next iteration (due to buffer swapping) by
-        #     # writting the thread values of f_1 (i.e._f1_thread) into f_0.
-
-        #     # Unroll the loop over boundary conditions
-        #     for i in range(wp.static(len(self.boundary_conditions))):
-        #         if wp.static(self.boundary_conditions[i].needs_aux_recovery):
-        #             if _boundary_id == wp.static(self.boundary_conditions[i].id):
-        #                 # Perform the swapping of data
-        #                 # (i) Recover the values stored in the central index of f_1
-        #                 f_0[0, index[0], index[1], index[2]] = self.store_dtype(_f1_thread[0])
-        #                 # (ii) Recover the values stored in the missing directions of f_1
-        #                 for l in range(1, self.velocity_set.q):
-        #                     if _missing_mask[l] == wp.uint8(1):
-        #                         f_0[_opp_indices[l], index[0], index[1], index[2]] = self.store_dtype(_f1_thread[_opp_indices[l]])
-
         @wp.kernel
         def kernel(
-            f_star: wp.array4d(dtype=Any),
+            f_0: wp.array4d(dtype=Any),
             f_1: wp.array4d(dtype=Any),
             bc_mask: wp.array4d(dtype=Any),
             missing_mask: wp.array4d(dtype=Any),
@@ -311,33 +285,33 @@ class LinearElastodynamicsStepperStream(Stepper):
             
             # Streaming
             # 2.a) stream on domain interior.
-            _f_post_stream = self.stream_LED.warp_functional(f_star, index)
+            # _f_post_stream = self.stream_LED.warp_functional(f_0, index)
 
             # TODO: remove U_num_tilde from get thread
-            _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread = get_thread_data(f_star, f_1, missing_mask, index, u_num_displ_1, U_num_tilde_1)
-            # _f_post_collision = _f1_thread
+            _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread = get_thread_data(f_0, f_1, missing_mask, index, u_num_displ_1, U_num_tilde_1)
+            _f_post_collision = _f1_thread  # this is for bcs. TODO
 
             # 2.b) apply post streaming BCs.
-            # _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_star, f_1, _f_post_collision, _f_post_stream, True)
+            # _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
 
             # 2.c) prepare displacement solution.
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)
             
-            for l in range(20):
-                f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_stream[l])
+            # for l in range(20):
+            #     f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_stream[l])
 
             for l in range(2):
-                u_num_displ_0[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
+                u_num_displ_1[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
             
         return None, kernel
 
 
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_star, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde_1, u_num_displ_0, u_num_displ_1):
+    def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde_1, u_num_displ_0, u_num_displ_1):
         wp.launch(
             self.warp_kernel,
-            inputs=[f_star, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde_1, u_num_displ_0, u_num_displ_1],
-            dim=f_star.shape[1:],
+            inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep, U_num_tilde_1, u_num_displ_0, u_num_displ_1],
+            dim=f_0.shape[1:],
         )
 
-        return f_star, f_1, u_num_displ_0, u_num_displ_1
+        return f_0, f_1, u_num_displ_0, u_num_displ_1

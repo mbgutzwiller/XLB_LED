@@ -254,36 +254,11 @@ class LinearElastodynamicsStepperCollide(Stepper):
 
             return _f0_thread, _f1_thread, _uxy_thread
 
-        # @wp.func
-        # def apply_aux_recovery_bc(
-        #     ind_feqex: Any,
-        #     _boundary_id: Any,
-        #     _missing_mask: Any,
-        #     f_0: Any,
-        #     _f1_thread: Any,
-        # ):
-        #     # Note:
-        #     # In XLB, the BC auxiliary data (e.g. prescribed values of pressure or normal velocity) are stored in (i) central index of f_1 and/or
-        #     # (ii) missing directions of f_1. Some BCs may or may not need all these available storage space. This function checks whether
-        #     # the BC needs recovery of auxiliary data and then recovers the information for the next iteration (due to buffer swapping) by
-        #     # writting the thread values of f_1 (i.e._f1_thread) into f_0.
-
-        #     # Unroll the loop over boundary conditions
-        #     for i in range(wp.static(len(self.boundary_conditions))):
-        #         if wp.static(self.boundary_conditions[i].needs_aux_recovery):
-        #             if _boundary_id == wp.static(self.boundary_conditions[i].id):
-        #                 # Perform the swapping of data
-        #                 # (i) Recover the values stored in the central index of f_1
-        #                 f_0[0, index[0], index[1], index[2]] = self.store_dtype(_f1_thread[0])
-        #                 # (ii) Recover the values stored in the missing directions of f_1
-        #                 for l in range(1, self.velocity_set.q):
-        #                     if _missing_mask[l] == wp.uint8(1):
-        #                         f_0[_opp_indices[l], index[0], index[1], index[2]] = self.store_dtype(_f1_thread[_opp_indices[l]])
 
         @wp.kernel
         def kernel(
             f_0: wp.array4d(dtype=Any),
-            f_star: wp.array4d(dtype=Any),
+            f_1: wp.array4d(dtype=Any),
             bc_mask: wp.array4d(dtype=Any),
             omega: Any,
             timestep: int,
@@ -296,20 +271,20 @@ class LinearElastodynamicsStepperCollide(Stepper):
 
             
             # TODO: remove U_num_tilde from get thread
-            _f0_thread, _fstar_thread, _uxy_thread = get_thread_data(f_0, f_star, index, u_num_displ_0)
+            _f0_thread, _f1_thread, _uxy_thread = get_thread_data(f_0, f_1, index, u_num_displ_0)
             _f_post_stream = _f0_thread
-
-            t = self.compute_dtype(timestep)* wp.delta_t_led
+            
+            t = self.compute_dtype(timestep) * wp.delta_t_led
 
             # Collision
             # 1.a)
             _U_num_tilde = self.macroscopic_LED.warp_functional(_f_post_stream, index, t)
 
             # 1.b) - get displacement solution.
-            # if t > 0:  # This is also done in the matlab script..
-            _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde, _uxy_thread)
-            # else:
-                # _u_num_displ = _uxy_thread
+            if timestep > 0:  # This is also done in the matlab script..
+                _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde, _uxy_thread)
+            else:
+                _u_num_displ = _uxy_thread
             
             # 1.c) Get local equilibrium populations
             _feq = self.equilibrium_LED.warp_functional(_U_num_tilde)
@@ -320,27 +295,20 @@ class LinearElastodynamicsStepperCollide(Stepper):
                 U_num_tilde[l, index[0], index[1], index[2]] = self.store_dtype(_U_num_tilde[l])
 
             for l in range(20):
-                f_star[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
+                f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_collision[l])
 
             for l in range(2):
                 u_num_displ_1[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
+            
 
         return None, kernel
 
-    # @Operator.register_backend(ComputeBackend.WARP)
-    # def warp_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep):
-    #     wp.launch(
-    #         self.warp_kernel,
-    #         inputs=[f_0, f_1, bc_mask, missing_mask, omega, timestep],
-    #         dim=f_0.shape[1:],
-    #     )
-    #     return f_0, f_1
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_0, f_star, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1):
+    def warp_implementation(self, f_0, f_1, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1):
         wp.launch(
             self.warp_kernel,
-            inputs=[f_0, f_star, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1],
+            inputs=[f_0, f_1, bc_mask, omega, timestep, U_num_tilde, u_num_displ_0, u_num_displ_1],
             dim=f_0.shape[1:],
         )
 
-        return f_0, f_star, U_num_tilde, u_num_displ_1
+        return f_0, f_1, U_num_tilde, u_num_displ_1
