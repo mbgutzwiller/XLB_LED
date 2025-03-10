@@ -23,10 +23,12 @@ if __name__ == "__main__":
     grid_sizes = [80, 120, 160, 240, 320]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
-    errors = []
+    errors_u_x = []
+    errors_sigma_xy = []
     delta_xs = []
 
-    for grid_size, num_steps in zip(grid_sizes, num_stepss):
+    for grid_size, num_steps, i in zip(grid_sizes, num_stepss, range(len(grid_sizes))):
+        print(f"Starting run {i + 1} of {len(grid_sizes)}")
         grid_shape = (grid_size, grid_size)
         
         delta_x_led = domain_size/grid_size
@@ -44,10 +46,21 @@ if __name__ == "__main__":
         assert stability_factor < 1, "Unstable"
 
         simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-        errors.append(simulation.run(num_steps=num_steps, post_process_interval=1))
+        error_u_x, error_sigma_xy =  simulation.run(num_steps=num_steps, post_process_interval=1)
+        errors_u_x.append(error_u_x)
+        errors_sigma_xy.append(error_sigma_xy)
         delta_xs.append(delta_x_led)
+    print("Finished all runs.")
 
-    plt.figure()
-    plt.loglog(delta_xs, errors, marker="o", markersize=8)
-    plt.show()
+    fig, axs = plt.subplots(1, 2, figsize = (10, 5))
+    axs[0].loglog(delta_xs, errors_u_x, marker="o", markersize=8)
+    axs[0].set_xlabel("delta_x [m]")
+    axs[0].set_ylabel("error [m]")
+    axs[0].grid(True, which="both")
+    axs[1].loglog(delta_xs, errors_sigma_xy, marker="o", markersize=8)
+    axs[1].set_xlabel("delta_x [m]")
+    axs[1].set_ylabel("error [N/m^2]")
+    axs[1].grid(True, which="both")
+    fig.suptitle("Approximate L2 Error of Displacement and Stress")
+    plt.show(block=True)
 

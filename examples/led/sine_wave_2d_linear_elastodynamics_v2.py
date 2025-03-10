@@ -89,7 +89,8 @@ class SineWave2D_LED:
         self.f_0, self.U_num_tilde, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde, self.u_num_displ_0)
         wp.synchronize()
         wp.synchronize_device()
-        self.cumulative_error = 0
+        self.cumulative_error_u_x = 0
+        self.cumulative_error_sigma_xy = 0
 
         for timestep in range(num_steps):
             # Collision
@@ -103,9 +104,12 @@ class SineWave2D_LED:
             self.f_1 = self.stream_LED(self.f_0, self.f_1)
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
         
-        final_error = self.cumulative_error * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
-        final_error = np.sqrt(final_error)
-        return final_error
+        final_error_u_x = self.cumulative_error_u_x * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
+        final_error_sigma_xy = self.cumulative_error_sigma_xy * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
+        final_error_u_x = np.sqrt(final_error_u_x)
+        final_error_sigma_xy = np.sqrt(final_error_sigma_xy)
+
+        return final_error_u_x, final_error_sigma_xy
 
 
     def u_num_exact_x(self, x, y, t):
@@ -138,21 +142,13 @@ class SineWave2D_LED:
             # U_num_tilde = wp.to_jax(self.stepper_collide.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(0)))[..., 0]
             U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
             u_num_displ = wp.to_jax(self.u_num_displ_1)[..., 0]
-            # f_0 = wp.to_jax(self.f_0)[..., 0]
-            # U_num_tilde = self.stepper_collide.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(i*wp.delta_t_led))
-            # U_num_tilde = wp.to_jax(U_num_tilde)[..., 0]
 
-
-
-        # print("Contains NaNs:", np.isnan(U_num_tilde).any())
-        # print("Contains Inf:", np.isinf(U_num_tilde).any())
-
-        fields = {"u_x": u_num_displ[0],
-                  "u_y": u_num_displ[1],
-                  "abs_u": np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])),
-                  "sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
-                  "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
-                  "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
+        # fields = {"u_x": u_num_displ[0],
+        #           "u_y": u_num_displ[1],
+        #           "abs_u": np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])),
+        #           "sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
+        #           "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
+        #           "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
         
         # save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
         # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
@@ -160,7 +156,7 @@ class SineWave2D_LED:
         # Compare solutions on cuts through 2d plane
         t = np.float32(i * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
-        plot_index = int(0 * (grid_size-1))
+        plot_index = int(0.56 * (grid_size-1))
         assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting index invalid"
         plot_index_num = plot_index
         domain_size = 1
@@ -169,21 +165,6 @@ class SineWave2D_LED:
         y_cut = delta_x * (plot_index + 0.5)
         
         x_axis_num = np.linspace(delta_x/2, domain_size-delta_x/2, num=grid_size)
-        x_extended = np.concatenate([
-            x_axis_num,
-            x_axis_num + 1])
-
-        # Plot cut of u_num_x, u_num_y for constant y, x_axis
-        u_extended_ex = np.concatenate([
-            self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), 
-            self.u_num_exact_x(x=x_axis_num + 1, y=y_cut, t=t)
-        ])
-
-        u_extended_num = np.concatenate([
-            u_num_displ[0, :, plot_index_num], 
-            u_num_displ[0, :, plot_index_num]
-        ])
-
         if show_plot:
             plt.clf()
             plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), label="y = const, u_ex", color="green")
@@ -219,11 +200,20 @@ class SineWave2D_LED:
         """
         Approximate error calculation
         """
-        u_ex = self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t)
-        u_num = u_num_displ[0, :, plot_index_num]
-        u_error = (u_ex - u_num)**2
-        u_error = np.sum(u_error)
-        self.cumulative_error += u_error
+        u_ex_x = self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t)
+        u_num_x = u_num_displ[0, :, plot_index_num]
+        error_u_x = (u_ex_x - u_num_x)**2
+        error_u_x = np.sum(error_u_x)
+        self.cumulative_error_u_x += error_u_x
+
+        sigma_xy_ex = -(wp.c_mu_led * self.U_jxy(x=x_axis_num, y=y_cut, t=t))
+        sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, plot_index_num])
+        error_sigma_xy = (sigma_xy_ex - sigma_xy_num)**2
+        error_sigma_xy = np.float32(np.sum(error_sigma_xy))
+        self.cumulative_error_sigma_xy += error_sigma_xy
+
+
+
         # u_exact_x = np.array([np.array(self.u_num_exact_x(x=x_axis, y=_y, t=t)) for _y in x_axis])
         # u_exact_y = np.array([np.array(self.u_num_exact_y(x=x_axis, y=_y, t=t)) for _y in x_axis])
         # # print(u_exact_x.shape)
