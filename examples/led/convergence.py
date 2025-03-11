@@ -40,6 +40,7 @@ if __name__ == "__main__":
         wp.delta_t_led = wp.constant(delta_t_led)
         wp.delta_x_led = wp.constant(delta_x_led)
         wp.c_led = wp.constant(c_led)
+        wp.grid_size = wp.constant(grid_size)
 
         stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
         print(f"Stability factor: {stability_factor}")
@@ -62,6 +63,6 @@ if __name__ == "__main__":
     axs[1].set_ylabel("error [N/m^2]")
     axs[1].grid(True, which="both")
     fig.suptitle("Approximate L2 Error of Displacement and Stress")
-    plt.savefig("u_x sigma_xy convergence plot L2")
+    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/u_x sigma_xy convergence plot L2_new")
     plt.show(block=True)
 

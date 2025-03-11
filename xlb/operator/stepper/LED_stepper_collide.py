@@ -15,7 +15,7 @@ from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.operator.displacement.displacement_LED import Displacement_LED
 from xlb.operator.stepper import Stepper
-from xlb.operator.boundary_condition.boundary_condition import ImplementationStep
+from xlb.operator.boundary_condition.boundary_condition_LED import ImplementationStep_LED
 from xlb.operator.boundary_condition.boundary_condition_registry import boundary_condition_registry
 from xlb.operator.collision import ForcedCollision
 from xlb.operator.boundary_masker import IndicesBoundaryMasker, MeshBoundaryMasker
@@ -146,7 +146,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         # Apply boundary conditions.
         # Skipped for now, as bc = [] in sinewave_LED_file.
         for bc in self.boundary_conditions:
-            if bc.implementation_step == ImplementationStep.STREAMING:
+            if bc.implementation_step == ImplementationStep_LED.STREAMING:
                 f_post_stream = bc(
                     f_0,
                     f_post_stream,
@@ -168,7 +168,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         # Apply collision type boundary conditions
         for bc in self.boundary_conditions:
             f_post_collision = bc.update_bc_auxilary_data(f_post_stream, f_post_collision, bc_mask, missing_mask)
-            if bc.implementation_step == ImplementationStep.COLLISION:
+            if bc.implementation_step == ImplementationStep_LED.COLLISION:
                 f_post_collision = bc(
                     f_post_stream,
                     f_post_collision,
@@ -220,11 +220,11 @@ class LinearElastodynamicsStepperCollide(Stepper):
             # Unroll the loop over boundary conditions
             for i in range(wp.static(len(self.boundary_conditions))):
                 if is_post_streaming:
-                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep.STREAMING):
+                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep_LED.STREAMING):
                         if _boundary_id == wp.static(self.boundary_conditions[i].id):
                             f_result = wp.static(self.boundary_conditions[i].warp_functional)(index, timestep, missing_mask, f_0, f_1, f_pre, f_post)
                 else:
-                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep.COLLISION):
+                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep_LED.COLLISION):
                         if _boundary_id == wp.static(self.boundary_conditions[i].id):
                             f_result = wp.static(self.boundary_conditions[i].warp_functional)(index, timestep, missing_mask, f_0, f_1, f_pre, f_post)
                     if wp.static(self.boundary_conditions[i].id in extrapolation_outflow_bc_ids):

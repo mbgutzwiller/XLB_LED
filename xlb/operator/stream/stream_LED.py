@@ -67,16 +67,12 @@ class Stream_LED(Operator):
             for l in range(self.velocity_set.q):
                 # Get pull index
                 pull_index = type(index)()
-                # wp.print(pull_index)
                 for d in range(self.velocity_set.d):
-                    # wp.print(index[d])
-                    # wp.print(_c[d, l])
                     pull_index[d] = index[d] - _c[d, l]
 
                     # impose periodicity for out of bound values
                     if pull_index[d] < 0:
                         pull_index[d] = f.shape[d + 1] - 1  # f has shape (20, nx, ny, nz)
-                        # print(pull_index[d])
                     elif pull_index[d] >= f.shape[d + 1]:
                         pull_index[d] = 0
 
@@ -84,7 +80,6 @@ class Stream_LED(Operator):
                 # Unlike other functionals, we need to cast the type here since we read from the buffer
                 # _f[l] = self.compute_dtype(f[l, pull_index[0], pull_index[1], pull_index[2]])
                 # the f looks like (f_10_vx, f_10_vy, f_10_js, f_10_jd, f_10_jxy, f_01_vx, f_01_vy, f_01_js, f_01_jd, f_01_jxy, ...)
-                # wp.print(pull_index)
                 for m in range(5):
                     _f[l * 5 + m] = self.compute_dtype(f[l * 5 + m, pull_index[0], pull_index[1], pull_index[2]])
 

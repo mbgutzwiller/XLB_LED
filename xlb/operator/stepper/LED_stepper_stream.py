@@ -15,7 +15,7 @@ from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.operator.displacement.displacement_LED import Displacement_LED
 from xlb.operator.stepper import Stepper
-from xlb.operator.boundary_condition.boundary_condition import ImplementationStep
+from xlb.operator.boundary_condition.boundary_condition_LED import ImplementationStep_LED
 from xlb.operator.boundary_condition.boundary_condition_registry import boundary_condition_registry
 from xlb.operator.collision import ForcedCollision
 from xlb.operator.boundary_masker import IndicesBoundaryMasker, MeshBoundaryMasker
@@ -146,7 +146,7 @@ class LinearElastodynamicsStepperStream(Stepper):
         # Apply boundary conditions.
         # Skipped for now, as bc = [] in sinewave_LED_file.
         for bc in self.boundary_conditions:
-            if bc.implementation_step == ImplementationStep.STREAMING:
+            if bc.implementation_step == ImplementationStep_LED.STREAMING:
                 f_post_stream = bc(
                     f_0,
                     f_post_stream,
@@ -168,7 +168,7 @@ class LinearElastodynamicsStepperStream(Stepper):
         # Apply collision type boundary conditions
         for bc in self.boundary_conditions:
             f_post_collision = bc.update_bc_auxilary_data(f_post_stream, f_post_collision, bc_mask, missing_mask)
-            if bc.implementation_step == ImplementationStep.COLLISION:
+            if bc.implementation_step == ImplementationStep_LED.COLLISION:
                 f_post_collision = bc(
                     f_post_stream,
                     f_post_collision,
@@ -186,7 +186,7 @@ class LinearElastodynamicsStepperStream(Stepper):
         _f_vec = wp.vec(self.velocity_set.q * 5, dtype=self.compute_dtype)
         _uxy_vec = wp.vec(2, dtype=self.compute_dtype)
         _U_num_tilde_vec = wp.vec(5, dtype=self.compute_dtype)
-        _missing_mask_vec = wp.vec(self.velocity_set.q * 5, dtype=wp.uint8)
+        _missing_mask_vec = wp.vec(self.velocity_set.q, dtype=wp.uint8)
         _opp_indices = self.velocity_set.opp_indices
 
         # Read the list of bc_to_id created upon instantiation
@@ -220,11 +220,11 @@ class LinearElastodynamicsStepperStream(Stepper):
             # Unroll the loop over boundary conditions
             for i in range(wp.static(len(self.boundary_conditions))):
                 if is_post_streaming:
-                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep.STREAMING):
+                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep_LED.STREAMING):
                         if _boundary_id == wp.static(self.boundary_conditions[i].id):
                             f_result = wp.static(self.boundary_conditions[i].warp_functional)(index, timestep, missing_mask, f_0, f_1, f_pre, f_post)
                 else:
-                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep.COLLISION):
+                    if wp.static(self.boundary_conditions[i].implementation_step == ImplementationStep_LED.COLLISION):
                         if _boundary_id == wp.static(self.boundary_conditions[i].id):
                             f_result = wp.static(self.boundary_conditions[i].warp_functional)(index, timestep, missing_mask, f_0, f_1, f_pre, f_post)
                     if wp.static(self.boundary_conditions[i].id in extrapolation_outflow_bc_ids):
@@ -253,6 +253,7 @@ class LinearElastodynamicsStepperStream(Stepper):
                 # q-sized vector of pre-streaming populations
                 _f0_thread[l] = self.compute_dtype(f0_buffer[l, index[0], index[1], index[2]])
                 _f1_thread[l] = self.compute_dtype(f1_buffer[l, index[0], index[1], index[2]])
+            for l in range(4):
                 if missing_mask[l, index[0], index[1], index[2]]:
                     _missing_mask[l] = wp.uint8(1)
                 else:
@@ -289,7 +290,7 @@ class LinearElastodynamicsStepperStream(Stepper):
 
             # TODO: remove U_num_tilde from get thread
             _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread = get_thread_data(f_0, f_1, missing_mask, index, u_num_displ_1, U_num_tilde_1)
-            _f_post_collision = _f1_thread  # this is for bcs. TODO
+            _f_post_collision = _f0_thread
 
             # 2.b) apply post streaming BCs.
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)

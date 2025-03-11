@@ -16,7 +16,7 @@ from xlb.helper.initializers_v2 import Initializer_LED
 import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
 
-
+wp.build.clear_kernel_cache()
 plt.ion()
 
 # wp.config.print_launches = False
@@ -61,11 +61,11 @@ class SineWave2D_LED:
         return walls  # Return as many different indices sets as you need.
 
     def setup_boundary_conditions(self):
-        # # TODO: Adjust BCs here.
-        # walls = self.define_boundary_indices()
-        # bc_walls = DirichletBC_LED(indices=walls)
-        # self.boundary_conditions = [bc_walls]
-        self.boundary_conditions = []
+        # TODO: Adjust BCs here.
+        walls = self.define_boundary_indices()
+        bc_walls = DirichletBC_LED(indices=walls, velocity_set=self.velocity_set)
+        self.boundary_conditions = [bc_walls]
+        # self.boundary_conditions = []
 
     def setup_stepper(self):
         self.stepper_stream = LinearElastodynamicsStepperStream(
@@ -161,7 +161,7 @@ class SineWave2D_LED:
         # Compare solutions on cuts through 2d plane
         t = np.float32(i * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
-        plot_index = int(0.56 * (grid_size-1))
+        plot_index = int(0. * (grid_size-1))
         assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting index invalid"
         plot_index_num = plot_index
         domain_size = 1
@@ -231,34 +231,12 @@ class SineWave2D_LED:
         #     self.max_error_sigma_xy = error_sigma_xy
 
 
-        # u_exact_x = np.array([np.array(self.u_num_exact_x(x=x_axis, y=_y, t=t)) for _y in x_axis])
-        # u_exact_y = np.array([np.array(self.u_num_exact_y(x=x_axis, y=_y, t=t)) for _y in x_axis])
-        # # print(u_exact_x.shape)
-        # error_x = u_num_displ[0] - u_exact_x
-        # error_sum = 0
-        # for i in range(grid_size):
-        #     for j in range(error_x.shape[0]):
-        #         error_sum += error_x[i, j]**2
-        # error_sum *= wp.delta_t_led * wp.delta_x_led ** 2 * 40000
-        # error_sum = np.sqrt(error_sum)
-        # norm_sol = 0
-        # for i in range(error_x.shape[0]):
-        #     for j in range(error_x.shape[0]):
-        #         norm_sol += u_exact_x[i, j]**2
-        # norm_sol *= wp.delta_t_led * wp.delta_x_led ** 2 * 40000
-        # norm_sol = np.sqrt(norm_sol)
-        # print(error_sum/norm_sol)
-
-
-        # l2_error_step = 
-
-
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 160  # Number of grid cells along one dimension
+    grid_size = 80  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 400  # Number of collision/streaming steps
-    pp_interval = 10  # Post process interval
+    num_steps = 200  # Number of collision/streaming steps
+    pp_interval = 1  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
@@ -268,6 +246,7 @@ if __name__ == "__main__":
     c_mu_led = 0.4**0.5
     stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
 
+    wp.grid_size = wp.constant(grid_size)
     wp.c_mu_led = wp.constant(c_mu_led)
     wp.c_k_led = wp.constant(c_k_led)
     wp.delta_t_led = wp.constant(delta_t_led)

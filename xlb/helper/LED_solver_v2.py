@@ -34,7 +34,7 @@ def create_LED_fields(
     f_0 = grid.create_field(cardinality=20, dtype=precision_policy.store_precision)
     f_1 = grid.create_field(cardinality=20, dtype=precision_policy.store_precision)
     f_temp = grid.create_field(cardinality=20, dtype=precision_policy.store_precision)
-    missing_mask = grid.create_field(cardinality=20, dtype=Precision.BOOL)
+    missing_mask = grid.create_field(cardinality=4, dtype=Precision.BOOL)
     bc_mask = grid.create_field(cardinality=1, dtype=Precision.UINT8)
 
     return grid, f_0, f_1, f_temp, missing_mask, bc_mask
