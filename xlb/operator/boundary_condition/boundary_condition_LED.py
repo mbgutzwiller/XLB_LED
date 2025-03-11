@@ -95,18 +95,19 @@ class BoundaryCondition_LED(Operator):
             f_post: wp.array4d(dtype=Any),
             bc_mask: wp.array4d(dtype=wp.uint8),
             missing_mask: wp.array4d(dtype=wp.bool),
+            dudt_D_tilde: wp.array4d(dtype=Any),
         ):
             # Get the global index
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
 
             # read tid data
-            _f_pre, _f_post, _boundary_id, _missing_mask = bc_helper.get_thread_data(f_pre, f_post, bc_mask, missing_mask, index)
+            _f_pre, _f_post, _boundary_id, _missing_mask, _dudt_D_tilde = bc_helper.get_thread_data(f_pre, f_post, bc_mask, missing_mask, index, dudt_D_tilde)
 
             # Apply the boundary condition
             if _boundary_id == _id:
                 timestep = 0
-                _f = functional(index, timestep, _missing_mask, f_pre, f_post, _f_pre, _f_post)
+                _f = functional(index, timestep, _missing_mask, f_pre, f_post, _f_pre, _f_post, _dudt_D_tilde)
             else:
                 _f = _f_post
 

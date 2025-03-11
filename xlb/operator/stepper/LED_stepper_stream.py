@@ -285,20 +285,20 @@ class LinearElastodynamicsStepperStream(Stepper):
             
             # Streaming
             # 2.a) stream on domain interior.
-            # _f_post_stream = self.stream_LED.warp_functional(f_0, index)
+            _f_post_stream = self.stream_LED.warp_functional(f_0, index)
 
             # TODO: remove U_num_tilde from get thread
             _f0_thread, _f1_thread, _missing_mask, _uxy_thread, _U_num_tilde_thread = get_thread_data(f_0, f_1, missing_mask, index, u_num_displ_1, U_num_tilde_1)
             _f_post_collision = _f1_thread  # this is for bcs. TODO
 
             # 2.b) apply post streaming BCs.
-            # _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
+            _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
 
             # 2.c) prepare displacement solution.
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)
             
-            # for l in range(20):
-            #     f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_stream[l])
+            for l in range(20):
+                f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_stream[l])
 
             for l in range(2):
                 u_num_displ_1[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])

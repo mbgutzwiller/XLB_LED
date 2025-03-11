@@ -40,10 +40,12 @@ class HelperFunctionsBC_LED(object):
             bc_mask: wp.array4d(dtype=wp.uint8),
             missing_mask: wp.array4d(dtype=wp.bool),
             index: wp.vec3i,
+            u_D_tilde: wp.array4d(dtype=Any),
         ):
             # Get the boundary id and missing mask
             _f_pre = _f_vec()
             _f_post = _f_vec()
+            _u_D_tilde = _u_vec()
             _boundary_id = bc_mask[0, index[0], index[1], index[2]]
             _missing_mask = _missing_mask_vec()
             for l in range(20):
@@ -56,7 +58,11 @@ class HelperFunctionsBC_LED(object):
                     _missing_mask[l] = wp.uint8(1)
                 else:
                     _missing_mask[l] = wp.uint8(0)
-            return _f_pre, _f_post, _boundary_id, _missing_mask
+            
+            for l in range(5):
+                _u_D_tilde[l] = compute_dtype(u_D_tilde[l, index[0], index[1], index[2]])
+
+            return _f_pre, _f_post, _boundary_id, _missing_mask, _u_D_tilde
 
         # @wp.func
         # def get_bc_fsum(

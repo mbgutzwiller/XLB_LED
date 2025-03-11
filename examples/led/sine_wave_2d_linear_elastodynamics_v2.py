@@ -79,7 +79,7 @@ class SineWave2D_LED:
             collision_type="BGK_LED",
         )
 
-    def run(self, num_steps, post_process_interval=100):
+    def run(self, num_steps, post_process_interval=100, show_plot=False):
         # TODO: initialize U_num_here
         self.stream_LED = Stream_LED(self.velocity_set, self.precision_policy, self.compute_backend)
         initializer = Initializer_LED(velocity_set=self.velocity_set,
@@ -92,24 +92,29 @@ class SineWave2D_LED:
         self.cumulative_error_u_x = 0
         self.cumulative_error_sigma_xy = 0
 
+        self.max_error_u = 0
+        self.max_error_sigma_xy = 0
+
         for timestep in range(num_steps):
             # Collision
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
             # Postprocessing: Show plot or calculate error
             if timestep % post_process_interval == 0 or timestep == num_steps - 1:
-                self.post_process(timestep)
+                self.post_process(timestep, show_plot)
             
             # Streaming
-            self.f_1 = self.stream_LED(self.f_0, self.f_1)
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
-        
+
+        # Calculation for L2 norm
         final_error_u_x = self.cumulative_error_u_x * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
         final_error_sigma_xy = self.cumulative_error_sigma_xy * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
         final_error_u_x = np.sqrt(final_error_u_x)
         final_error_sigma_xy = np.sqrt(final_error_sigma_xy)
-
         return final_error_u_x, final_error_sigma_xy
+
+        # # Return max of inf norm over run
+        # return self.max_error_u, self.max_error_sigma_xy
 
 
     def u_num_exact_x(self, x, y, t):
@@ -178,9 +183,9 @@ class SineWave2D_LED:
             plt.title(f"t = {t:.6f}s, interval {i}")
             plt.legend()
             plt.draw()
-            # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
-            plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
-            plt.pause(0.0001)
+            plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
+            # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
+            plt.pause(2)
 
             # # Plot cut of vx, vy for constant y, x_axis
             # plt.clf()
@@ -192,8 +197,8 @@ class SineWave2D_LED:
             # plt.grid()
             # plt.legend()
             # plt.draw()
-            # # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
-            # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_vx_vy_figure", dpi=300)
+            # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_vx_vy_figure", dpi=300)
+            # # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_vx_vy_figure", dpi=300)
             # plt.pause(0.0001)
 
 
@@ -202,16 +207,28 @@ class SineWave2D_LED:
         """
         u_ex_x = self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t)
         u_num_x = u_num_displ[0, :, plot_index_num]
+        # L2 error
         error_u_x = (u_ex_x - u_num_x)**2
         error_u_x = np.sum(error_u_x)
         self.cumulative_error_u_x += error_u_x
 
+        # # Linf
+        # error_u_x = np.max(np.abs(u_ex_x - u_num_x))
+        # if error_u_x > self.cumulative_error_u_x:
+        #     self.max_error_u = error_u_x
+
+
         sigma_xy_ex = -(wp.c_mu_led * self.U_jxy(x=x_axis_num, y=y_cut, t=t))
         sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, plot_index_num])
+        # L2 error
         error_sigma_xy = (sigma_xy_ex - sigma_xy_num)**2
         error_sigma_xy = np.float32(np.sum(error_sigma_xy))
         self.cumulative_error_sigma_xy += error_sigma_xy
 
+        # # Linf
+        # error_sigma_xy = np.max(np.abs(sigma_xy_ex - sigma_xy_num))
+        # if error_sigma_xy > self.cumulative_error_sigma_xy:
+        #     self.max_error_sigma_xy = error_sigma_xy
 
 
         # u_exact_x = np.array([np.array(self.u_num_exact_x(x=x_axis, y=_y, t=t)) for _y in x_axis])
@@ -241,7 +258,7 @@ if __name__ == "__main__":
     grid_size = 160  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = 400  # Number of collision/streaming steps
-    pp_interval = 1  # Post process interval
+    pp_interval = 10  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
@@ -277,6 +294,6 @@ if __name__ == "__main__":
 
     stime = time.time()
     simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-    simulation.run(num_steps=num_steps, post_process_interval=pp_interval)
+    simulation.run(num_steps=num_steps, post_process_interval=pp_interval, show_plot=True)
     print(f"took {time.time() - stime:.2} seconds")
 

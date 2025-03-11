@@ -62,6 +62,8 @@ class DirichletBC_LED(BoundaryCondition_LED):
     def _construct_warp(self):
         # Set local constants
         _opp_indices = self.velocity_set.opp_indices
+        _vel_c = wp.vec(2, dtype=self.compute_dtype)
+
 
         # Construct the functional for this BC
         @wp.func
@@ -73,9 +75,13 @@ class DirichletBC_LED(BoundaryCondition_LED):
             f_1: Any,
             f_pre: Any,
             f_post: Any,
+            dudt_D_tilde: Any,
         ):
             # Post-streaming values are only modified at missing direction
             _f = f_post
+            # this is [[1, 0, -1, 0],
+            #          [0, 1, 0, -1]]
+            _c = self.velocity_set.c
             # TODO: add S_ij
             for l in range(self.velocity_set.q):
                 # If the mask is missing then take the opposite index
@@ -84,12 +90,35 @@ class DirichletBC_LED(BoundaryCondition_LED):
                         # Get the pre-streaming distribution function in oppisite direction
                         # return negative of velocities
                         _f[l * 5 + m] = -f_pre[_opp_indices[l] * 5 + m]
+                        # Add contribution of S_ij*u_D_tilde
+                        _f[l * 5 + m] += self.compute_dtype(0.5) * dudt_D_tilde[m]
                 for m in range(2, 5):
                     if missing_mask[l * 5 + m] == wp.uint8(1):
                         # Get the pre-streaming distribution function in oppisite direction
-                        # return the same value for stresses
                         _f[l * 5 + m] = f_pre[_opp_indices[l] * 5 + m]
+                
+                for i, j, l in zip(_c[0], _c[1], range(4)):
+                    _f[l * 5 + 2] += i * wp.c_k_led * dudt_D_tilde[0]   + j * wp.c_k_led * dudt_D_tilde[1]
+                    _f[l * 5 + 3] += i * wp.c_mu_led * dudt_D_tilde[0]  - j * wp.c_mu_led * dudt_D_tilde[1]
+                    _f[l * 5 + 4] += j * wp.c_mu_led * dudt_D_tilde[0]  + i * wp.c_mu_led * dudt_D_tilde[1]
+                    raise UserWarning("Use t+0.5dt for dudt_D_tilde and boundary of domain for x, y, not node positions")
 
+
+
+
+            # # TODO: add S_ij
+            # for l in range(self.velocity_set.q):
+            #     # If the mask is missing then take the opposite index
+            #     for m in range(2):
+            #         if missing_mask[l * 5 + m] == wp.uint8(1):
+            #             # Get the pre-streaming distribution function in oppisite direction
+            #             # return negative of velocities
+            #             _f[l * 5 + m] = -f_pre[_opp_indices[l] * 5 + m]
+            #     for m in range(2, 5):
+            #         if missing_mask[l * 5 + m] == wp.uint8(1):
+            #             # Get the pre-streaming distribution function in oppisite direction
+            #             # return the same value for stresses
+            #             _f[l * 5 + m] = f_pre[_opp_indices[l] * 5 + m]
             return _f
 
         kernel = self._construct_kernel(functional)
@@ -97,11 +126,11 @@ class DirichletBC_LED(BoundaryCondition_LED):
         return functional, kernel
 
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_pre, f_post, bc_mask, missing_mask):
+    def warp_implementation(self, f_pre, f_post, bc_mask, missing_mask, u_D_tilde):
         # Launch the warp kernel
         wp.launch(
             self.warp_kernel,
-            inputs=[f_pre, f_post, bc_mask, missing_mask],
+            inputs=[f_pre, f_post, bc_mask, missing_mask, u_D_tilde],
             dim=f_pre.shape[1:],
         )
         return f_post

@@ -62,5 +62,6 @@ if __name__ == "__main__":
     axs[1].set_ylabel("error [N/m^2]")
     axs[1].grid(True, which="both")
     fig.suptitle("Approximate L2 Error of Displacement and Stress")
+    plt.savefig("u_x sigma_xy convergence plot L2")
     plt.show(block=True)
 
