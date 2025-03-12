@@ -99,6 +99,7 @@ class DirichletBC_LED(BoundaryCondition_LED):
                         _f[l * 5 + m] = f_pre[_opp_indices[l] * 5 + m]
             
             # for i, j in zip(_vel_c[0], _vel_c[1]):
+            # TODO: make this more efficient, maybe use c from velocity set and access directions with index, define boundary prior.
             for l in range(4):
                 if missing_mask[l] == wp.uint8(1):
                     if l == 0:
