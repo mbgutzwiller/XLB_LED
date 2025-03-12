@@ -110,10 +110,10 @@ class SineWave2D_LED:
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
 
         # Calculation for L2 norm
-        final_error_norm_u = self.cumulative_error_u * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-        final_norm_u = self.cumulative_u * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-        final_error_norm_sigma = self.cumulative_error_sigma * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-        final_norm_sigma = self.cumulative_sigma * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_error_norm_u = np.sqrt(self.cumulative_error_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_norm_u = np.sqrt(self.cumulative_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma
 
 
@@ -211,10 +211,13 @@ class SineWave2D_LED:
         u_num_x = u_num_displ[0, :, :]
         u_num_y = u_num_displ[1, :, :]
 
-        norm_error_u = np.linalg.norm(np.stack([(u_ex_x - u_num_x), (u_ex_y - u_num_y)], axis=0))
-        max_error_u = np.max(np.sqrt((u_ex_x - u_num_x) ** 2 + (u_ex_y - u_num_y) ** 2))
-        norm_u = np.linalg.norm(np.stack([u_ex_x, u_ex_y], axis=0))
-
+        # norm_error_u = np.linalg.norm(np.stack([(u_ex_x - u_num_x), (u_ex_y - u_num_y)], axis=0))
+        norm_error_u = np.sum((u_ex_x - u_num_x) ** 2 + (u_ex_y - u_num_y) ** 2)
+        max_error_u = np.max(np.abs(np.stack([u_ex_x - u_num_x,
+                                              u_ex_y - u_num_y,
+                                              ], axis=0)))
+        # norm_u = np.linalg.norm(np.stack([u_ex_x, u_ex_y], axis=0))
+        norm_u = np.sum((u_ex_x) ** 2 + (u_ex_y) ** 2)
         self.cumulative_error_u += norm_error_u
         self.cumulative_u += norm_u
         if max_error_u > self.max_error_u:
@@ -229,9 +232,14 @@ class SineWave2D_LED:
         sigma_xx_num = -(wp.c_k_led * U_num_tilde[2, :, :] + wp.c_mu_led * U_num_tilde[3, :, :])
         sigma_yy_num = -(wp.c_k_led * U_num_tilde[2, :, :] - wp.c_mu_led * U_num_tilde[3, :, :])
         sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, :])
-        norm_error_sigma = np.linalg.norm(np.stack([(sigma_xx_ex - sigma_xx_num), (sigma_yy_ex - sigma_yy_num), (sigma_xy_ex - sigma_xy_num)], axis=0))
-        norm_sigma = np.linalg.norm(np.stack([sigma_xx_ex, sigma_yy_ex, sigma_xy_ex], axis=0))
-        max_error_sigma = np.max(np.sqrt((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2))
+        # norm_error_sigma = np.linalg.norm(np.stack([(sigma_xx_ex - sigma_xx_num), (sigma_yy_ex - sigma_yy_num), (sigma_xy_ex - sigma_xy_num)], axis=0))
+        norm_error_sigma = np.sum((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2)
+        norm_sigma = np.sum((sigma_xx_ex) ** 2 + (sigma_yy_ex) ** 2 + (sigma_xy_ex) ** 2)
+        # norm_sigma = np.linalg.norm(np.stack([sigma_xx_ex, sigma_yy_ex, sigma_xy_ex], axis=0))
+        max_error_sigma = np.max(np.abs(np.stack([sigma_xx_ex - sigma_xx_num,
+                                                  sigma_yy_ex - sigma_yy_num,
+                                                  sigma_xy_ex - sigma_xy_num
+                                                  ], axis=0)))        
         self.cumulative_error_sigma += norm_error_sigma
         self.cumulative_sigma += norm_sigma
         if max_error_sigma > self.max_error_sigma:
