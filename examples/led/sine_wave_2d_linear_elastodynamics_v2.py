@@ -15,8 +15,9 @@ import time
 from xlb.helper.initializers_v2 import Initializer_LED
 import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
+from tqdm import tqdm
 
-wp.build.clear_kernel_cache()
+# wp.build.clear_kernel_cache()
 plt.ion()
 
 # wp.config.print_launches = False
@@ -61,11 +62,11 @@ class SineWave2D_LED:
         return walls  # Return as many different indices sets as you need.
 
     def setup_boundary_conditions(self):
-        # TODO: Adjust BCs here.
-        walls = self.define_boundary_indices()
-        bc_walls = DirichletBC_LED(indices=walls, velocity_set=self.velocity_set)
-        self.boundary_conditions = [bc_walls]
-        # self.boundary_conditions = []
+        # # TODO: Adjust BCs here.
+        # walls = self.define_boundary_indices()
+        # bc_walls = DirichletBC_LED(indices=walls, velocity_set=self.velocity_set)
+        # self.boundary_conditions = [bc_walls]
+        self.boundary_conditions = []
 
     def setup_stepper(self):
         self.stepper_stream = LinearElastodynamicsStepperStream(
@@ -89,13 +90,15 @@ class SineWave2D_LED:
         self.f_0, self.U_num_tilde, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde, self.u_num_displ_0)
         wp.synchronize()
         wp.synchronize_device()
-        self.cumulative_error_u_x = 0
-        self.cumulative_error_sigma_xy = 0
+        self.cumulative_error_u = 0
+        self.cumulative_u = 0
+        self.cumulative_error_sigma = 0
+        self.cumulative_sigma = 0
 
         self.max_error_u = 0
-        self.max_error_sigma_xy = 0
+        self.max_error_sigma = 0
 
-        for timestep in range(num_steps):
+        for timestep in tqdm(range(num_steps)):
             # Collision
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
@@ -107,14 +110,11 @@ class SineWave2D_LED:
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
 
         # Calculation for L2 norm
-        final_error_u_x = self.cumulative_error_u_x * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
-        final_error_sigma_xy = self.cumulative_error_sigma_xy * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led) * self.grid_shape[0]
-        final_error_u_x = np.sqrt(final_error_u_x)
-        final_error_sigma_xy = np.sqrt(final_error_sigma_xy)
-        return final_error_u_x, final_error_sigma_xy
-
-        # # Return max of inf norm over run
-        # return self.max_error_u, self.max_error_sigma_xy
+        final_error_norm_u = self.cumulative_error_u * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_norm_u = self.cumulative_u * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_error_norm_sigma = self.cumulative_error_sigma * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        final_norm_sigma = self.cumulative_sigma * np.sqrt(np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma
 
 
     def u_num_exact_x(self, x, y, t):
@@ -205,30 +205,38 @@ class SineWave2D_LED:
         """
         Approximate error calculation
         """
-        u_ex_x = self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t)
-        u_num_x = u_num_displ[0, :, plot_index_num]
-        # L2 error
-        error_u_x = (u_ex_x - u_num_x)**2
-        error_u_x = np.sum(error_u_x)
-        self.cumulative_error_u_x += error_u_x
+        # Calculation for L2 norm
+        u_ex_x = np.array([np.array([self.u_num_exact_x(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        u_ex_y = np.array([np.array([self.u_num_exact_y(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        u_num_x = u_num_displ[0, :, :]
+        u_num_y = u_num_displ[1, :, :]
 
-        # # Linf
-        # error_u_x = np.max(np.abs(u_ex_x - u_num_x))
-        # if error_u_x > self.cumulative_error_u_x:
-        #     self.max_error_u = error_u_x
+        norm_error_u = np.linalg.norm(np.stack([(u_ex_x - u_num_x), (u_ex_y - u_num_y)], axis=0))
+        max_error_u = np.max(np.sqrt((u_ex_x - u_num_x) ** 2 + (u_ex_y - u_num_y) ** 2))
+        norm_u = np.linalg.norm(np.stack([u_ex_x, u_ex_y], axis=0))
 
+        self.cumulative_error_u += norm_error_u
+        self.cumulative_u += norm_u
+        if max_error_u > self.max_error_u:
+            self.max_error_u = max_error_u
 
-        sigma_xy_ex = -(wp.c_mu_led * self.U_jxy(x=x_axis_num, y=y_cut, t=t))
-        sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, plot_index_num])
-        # L2 error
-        error_sigma_xy = (sigma_xy_ex - sigma_xy_num)**2
-        error_sigma_xy = np.float32(np.sum(error_sigma_xy))
-        self.cumulative_error_sigma_xy += error_sigma_xy
+        _U_js_ex = np.array([np.array([self.U_js(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        _U_jd_ex = np.array([np.array([self.U_jd(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        _U_jxy_ex = np.array([np.array([self.U_jxy(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        sigma_xx_ex = -(wp.c_k_led * _U_js_ex + wp.c_mu_led * _U_jd_ex)
+        sigma_yy_ex = -(wp.c_k_led * _U_js_ex - wp.c_mu_led * _U_jd_ex)
+        sigma_xy_ex = -(wp.c_mu_led * _U_jxy_ex)  
+        sigma_xx_num = -(wp.c_k_led * U_num_tilde[2, :, :] + wp.c_mu_led * U_num_tilde[3, :, :])
+        sigma_yy_num = -(wp.c_k_led * U_num_tilde[2, :, :] - wp.c_mu_led * U_num_tilde[3, :, :])
+        sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, :])
+        norm_error_sigma = np.linalg.norm(np.stack([(sigma_xx_ex - sigma_xx_num), (sigma_yy_ex - sigma_yy_num), (sigma_xy_ex - sigma_xy_num)], axis=0))
+        norm_sigma = np.linalg.norm(np.stack([sigma_xx_ex, sigma_yy_ex, sigma_xy_ex], axis=0))
+        max_error_sigma = np.max(np.sqrt((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2))
+        self.cumulative_error_sigma += norm_error_sigma
+        self.cumulative_sigma += norm_sigma
+        if max_error_sigma > self.max_error_sigma:
+            self.max_error_sigma = max_error_sigma
 
-        # # Linf
-        # error_sigma_xy = np.max(np.abs(sigma_xy_ex - sigma_xy_num))
-        # if error_sigma_xy > self.cumulative_error_sigma_xy:
-        #     self.max_error_sigma_xy = error_sigma_xy
 
 
 if __name__ == "__main__":

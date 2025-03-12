@@ -105,56 +105,36 @@ class DirichletBC_LED(BoundaryCondition_LED):
             
             # for i, j in zip(_vel_c[0], _vel_c[1]):
             for l in range(4):
-                if l == 0:
-                    i = 1
-                    j = 0
-                if l == 1:
-                    i = 0
-                    j = 1
-                if l == 2:
-                    i = -1
-                    j = 0
-                if l == 3:
-                    i = 0
-                    j = -1
-                # i = _vel_c[0, vel_dir]
-                # j = _vel_c[1, vel_dir] 
                 if missing_mask[l] == wp.uint8(1):
                     _x = 0.
                     _y = 0.
-                    # this is bottom:
-                    if (0 <= index[0] < wp.grid_size) and (index[1] == 0):
-                        if l == 1:
-                            _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
-                            _y = 0. 
-                    # this is left:
-                    elif (0 <= index[1] < wp.grid_size) and (index[0] == 0):
-                        if l == 0:
-                            _x = 0.
-                            _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
-                    # this is right
-                    elif (0 <= index[1] < wp.grid_size) and (index[0] == wp.grid_size - 1):
-                        if l == 2:
-                            wp.print("Streaming from right to left at right boundary")
-                            wp.print(index[0])
-                            wp.print(index[1])
-                            _x = 1.
-                            _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
-                    # this is top
-                    elif (0 <= index[0] < wp.grid_size) and (index[1] == wp.grid_size - 1 ):
-                        if l == 3:
-                            _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
-                            _y = 1.
-                    else:
-                        wp.print("caught else")
-                    if _x + _y > wp.delta_x_led / 10.:
-                        _dudt_D_tilde = dudt_tilde_func(_x, _y, (self.compute_dtype(timestep)+self.compute_dtype(0.5))*wp.delta_t_led)
-                        # Add contribution of S_ij*u_D_tilde
-                        _f[l * 5 + 0] += self.compute_dtype(0.5) * _dudt_D_tilde[0]
-                        _f[l * 5 + 1] += self.compute_dtype(0.5) * _dudt_D_tilde[1]
-                        _f[l * 5 + 2] += (self.compute_dtype(i) * wp.c_k_led * _dudt_D_tilde[0]   + self.compute_dtype(j) * wp.c_k_led * _dudt_D_tilde[1])
-                        _f[l * 5 + 3] += (self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[0]  - self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[1])
-                        _f[l * 5 + 4] += (self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[0]  + self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[1])
+                    if l == 0:
+                        i = 1
+                        j = 0
+                        _x = 0.
+                        _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
+                    elif l == 1:
+                        i = 0
+                        j = 1
+                        _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
+                        _y = 0. 
+                    elif l == 2:
+                        i = -1
+                        j = 0
+                        _x = 1.
+                        _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
+                    elif l == 3:
+                        i = 0
+                        j = -1
+                        _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
+                        _y = 1.
+                    _dudt_D_tilde = dudt_tilde_func(_x, _y, (self.compute_dtype(timestep)+self.compute_dtype(0.5))*wp.delta_t_led)
+                    # Add contribution of S_ij*u_D_tilde
+                    _f[l * 5 + 0] += self.compute_dtype(0.5) * _dudt_D_tilde[0]
+                    _f[l * 5 + 1] += self.compute_dtype(0.5) * _dudt_D_tilde[1]
+                    _f[l * 5 + 2] += (self.compute_dtype(i) * wp.c_k_led * _dudt_D_tilde[0]  + self.compute_dtype(j) * wp.c_k_led * _dudt_D_tilde[1])
+                    _f[l * 5 + 3] += (self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[0]  - self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[1])
+                    _f[l * 5 + 4] += (self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[0]  + self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[1])
 
             # # TODO: add S_ij
             # for l in range(self.velocity_set.q):

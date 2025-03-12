@@ -20,11 +20,13 @@ if __name__ == "__main__":
 
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-    grid_sizes = [80, 120, 160, 240, 320]
+    grid_sizes = [80, 120, 160]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
-    errors_u_x = []
-    errors_sigma_xy = []
+    l2_errors_u = []
+    l2_errors_sigma = []
+    linf_errors_u = []
+    linf_errors_sigma = []
     delta_xs = []
 
     for grid_size, num_steps, i in zip(grid_sizes, num_stepss, range(len(grid_sizes))):
@@ -47,22 +49,56 @@ if __name__ == "__main__":
         assert stability_factor < 1, "Unstable"
 
         simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-        error_u_x, error_sigma_xy =  simulation.run(num_steps=num_steps, post_process_interval=1)
-        errors_u_x.append(error_u_x)
-        errors_sigma_xy.append(error_sigma_xy)
+        error_u, error_sigma, linf_error_u, linf_error_sigma =  simulation.run(num_steps=num_steps, post_process_interval=1)
+        l2_errors_u.append(error_u)
+        l2_errors_sigma.append(error_sigma)
+        linf_errors_u.append(linf_error_u)
+        linf_errors_sigma.append(linf_error_sigma)
         delta_xs.append(delta_x_led)
     print("Finished all runs.")
 
+    # Plotting L2 errors
+    C_u = l2_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
+    C_sigma = l2_errors_sigma[0] / (delta_xs[0] ** 2)
     fig, axs = plt.subplots(1, 2, figsize = (10, 5))
-    axs[0].loglog(delta_xs, errors_u_x, marker="o", markersize=8)
+    axs[0].loglog(delta_xs, l2_errors_u, marker="o", markersize=8)
     axs[0].set_xlabel("delta_x [m]")
     axs[0].set_ylabel("error [m]")
     axs[0].grid(True, which="both")
-    axs[1].loglog(delta_xs, errors_sigma_xy, marker="o", markersize=8)
+    axs[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+    axs[0].legend()
+    axs[1].loglog(delta_xs, l2_errors_sigma, marker="o", markersize=8)
     axs[1].set_xlabel("delta_x [m]")
     axs[1].set_ylabel("error [N/m^2]")
     axs[1].grid(True, which="both")
+    axs[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+    axs[1].legend()
     fig.suptitle("Approximate L2 Error of Displacement and Stress")
-    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/u_x sigma_xy convergence plot L2_new")
+    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/u_x sigma_xy convergence plot L2")
     plt.show(block=True)
+    plt.clf()
+
+    # Plotting L2 errors
+    C_u = linf_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
+    C_sigma = linf_errors_sigma[0] / (delta_xs[0] ** 2)
+    fig, axs = plt.subplots(1, 2, figsize = (10, 5))
+    axs[0].loglog(delta_xs, linf_errors_u, marker="o", markersize=8)
+    axs[0].set_xlabel("delta_x [m]")
+    axs[0].set_ylabel("error [m]")
+    axs[0].grid(True, which="both")
+    axs[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+    axs[0].legend()
+    axs[1].loglog(delta_xs, linf_errors_sigma, marker="o", markersize=8)
+    axs[1].set_xlabel("delta_x [m]")
+    axs[1].set_ylabel("error [N/m^2]")
+    axs[1].grid(True, which="both")
+    axs[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+    axs[1].legend()
+    fig.suptitle("Approximate LINF Error of Displacement and Stress")
+    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/u_x sigma_xy convergence plot LINF")
+    plt.show(block=True)
+    plt.clf()
+
+
+
 
