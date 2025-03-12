@@ -86,13 +86,8 @@ class DirichletBC_LED(BoundaryCondition_LED):
         ):
             # Post-streaming values are only modified at missing direction
             _f = f_post
-            # Dirichlet boundary condition u
-            # _c = _vel_c()
-            # this is [[1, 0, -1, 0],
-            #          [0, 1, 0, -1]]
-            # TODO: add S_ij
             for l in range(self.velocity_set.q):
-                # If the mask is missing then take the opposite index
+                # If the mask is missing (true, 1) then take the opposite index
                 for m in range(2):
                     if missing_mask[l] == wp.uint8(1):
                         # Get the pre-streaming distribution function in oppisite direction
@@ -106,8 +101,6 @@ class DirichletBC_LED(BoundaryCondition_LED):
             # for i, j in zip(_vel_c[0], _vel_c[1]):
             for l in range(4):
                 if missing_mask[l] == wp.uint8(1):
-                    _x = 0.
-                    _y = 0.
                     if l == 0:
                         i = 1
                         j = 0
@@ -132,23 +125,10 @@ class DirichletBC_LED(BoundaryCondition_LED):
                     # Add contribution of S_ij*u_D_tilde
                     _f[l * 5 + 0] += self.compute_dtype(0.5) * _dudt_D_tilde[0]
                     _f[l * 5 + 1] += self.compute_dtype(0.5) * _dudt_D_tilde[1]
-                    _f[l * 5 + 2] += (self.compute_dtype(i) * wp.c_k_led * _dudt_D_tilde[0]  + self.compute_dtype(j) * wp.c_k_led * _dudt_D_tilde[1])
-                    _f[l * 5 + 3] += (self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[0]  - self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[1])
-                    _f[l * 5 + 4] += (self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[0]  + self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[1])
+                    _f[l * 5 + 2] += (self.compute_dtype(i) * wp.c_k_led * _dudt_D_tilde[0]  + self.compute_dtype(j) * wp.c_k_led * _dudt_D_tilde[1]) / wp.c_led
+                    _f[l * 5 + 3] += (self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[0]  - self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[1]) / wp.c_led
+                    _f[l * 5 + 4] += (self.compute_dtype(j) * wp.c_mu_led * _dudt_D_tilde[0]  + self.compute_dtype(i) * wp.c_mu_led * _dudt_D_tilde[1]) / wp.c_led
 
-            # # TODO: add S_ij
-            # for l in range(self.velocity_set.q):
-            #     # If the mask is missing then take the opposite index
-            #     for m in range(2):
-            #         if missing_mask[l * 5 + m] == wp.uint8(1):
-            #             # Get the pre-streaming distribution function in oppisite direction
-            #             # return negative of velocities
-            #             _f[l * 5 + m] = -f_pre[_opp_indices[l] * 5 + m]
-            #     for m in range(2, 5):
-            #         if missing_mask[l * 5 + m] == wp.uint8(1):
-            #             # Get the pre-streaming distribution function in oppisite direction
-            #             # return the same value for stresses
-            #             _f[l * 5 + m] = f_pre[_opp_indices[l] * 5 + m]
             return _f
 
         kernel = self._construct_kernel(functional)
@@ -156,11 +136,11 @@ class DirichletBC_LED(BoundaryCondition_LED):
         return functional, kernel
 
     @Operator.register_backend(ComputeBackend.WARP)
-    def warp_implementation(self, f_pre, f_post, bc_mask, missing_mask, u_D_tilde):
+    def warp_implementation(self, f_pre, f_post, bc_mask, missing_mask):
         # Launch the warp kernel
         wp.launch(
             self.warp_kernel,
-            inputs=[f_pre, f_post, bc_mask, missing_mask, u_D_tilde],
+            inputs=[f_pre, f_post, bc_mask, missing_mask],
             dim=f_pre.shape[1:],
         )
         return f_post

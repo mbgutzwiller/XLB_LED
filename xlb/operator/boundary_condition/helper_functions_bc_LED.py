@@ -1,5 +1,4 @@
 from xlb import DefaultConfig, ComputeBackend
-from xlb.operator.macroscopic.second_moment import SecondMoment as MomentumFlux
 import warp as wp
 from typing import Any
 
@@ -28,10 +27,10 @@ class HelperFunctionsBC_LED(object):
         _qi = self.velocity_set.qi
         _u_vec = wp.vec(5, dtype=compute_dtype)
         _f_vec = wp.vec(20, dtype=compute_dtype)
-        _missing_mask_vec = wp.vec(20, dtype=wp.uint8)  # TODO fix vec bool
+        _missing_mask_vec = wp.vec(4, dtype=wp.uint8)  # TODO fix vec bool
 
         # Define the operator needed for computing the momentum flux
-        momentum_flux = MomentumFlux(velocity_set, precision_policy, compute_backend)
+        # momentum_flux = MomentumFlux(velocity_set, precision_policy, compute_backend)
 
         @wp.func
         def get_thread_data(
@@ -44,22 +43,19 @@ class HelperFunctionsBC_LED(object):
             # Get the boundary id and missing mask
             _f_pre = _f_vec()
             _f_post = _f_vec()
-            _u_D_tilde = _u_vec()
             _boundary_id = bc_mask[0, index[0], index[1], index[2]]
             _missing_mask = _missing_mask_vec()
-            for l in range(20):
+            for l in range(4):
                 # q-sized vector of populations
-                _f_pre[l] = compute_dtype(f_pre[l, index[0], index[1], index[2]])
-                _f_post[l] = compute_dtype(f_post[l, index[0], index[1], index[2]])
+                for m in range(5):
+                    _f_pre[l * 5 + m] = compute_dtype(f_pre[l * 5 + m, index[0], index[1], index[2]])
+                    _f_post[l * 5 + m] = compute_dtype(f_post[l * 5 + m, index[0], index[1], index[2]])
 
                 # TODO fix vec bool
                 if missing_mask[l, index[0], index[1], index[2]]:
                     _missing_mask[l] = wp.uint8(1)
                 else:
                     _missing_mask[l] = wp.uint8(0)
-            
-            for l in range(5):
-                _u_D_tilde[l] = compute_dtype(u_D_tilde[l, index[0], index[1], index[2]])
 
             return _f_pre, _f_post, _boundary_id, _missing_mask
 

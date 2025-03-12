@@ -294,6 +294,7 @@ class LinearElastodynamicsStepperStream(Stepper):
 
             # 2.b) apply post streaming BCs.
             _f_post_stream = apply_bc(index, timestep, _boundary_id, _missing_mask, f_0, f_1, _f_post_collision, _f_post_stream, True)
+            # _f_post_stream = self.boundary_conditions[0].warp_functional(index, timestep, missing_mask, f_0, f_1, f_pre, f_post)
 
             # 2.c) prepare displacement solution.
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)

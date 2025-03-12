@@ -102,7 +102,6 @@ class BoundaryCondition_LED(Operator):
 
             # read tid data
             _f_pre, _f_post, _boundary_id, _missing_mask = bc_helper.get_thread_data(f_pre, f_post, bc_mask, missing_mask, index)
-
             # Apply the boundary condition
             if _boundary_id == _id:
                 timestep = 0

@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-    grid_sizes = [80, 120, 160]
+    grid_sizes = [80, 120, 160, 240, 320]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
     l2_errors_u = []
@@ -74,7 +74,8 @@ if __name__ == "__main__":
     axs[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
     axs[1].legend()
     fig.suptitle("Approximate L2 Error of Displacement and Stress")
-    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/u_x sigma_xy convergence plot L2")
+    # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2")
+    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2")
     plt.show(block=True)
     plt.clf()
 
@@ -95,7 +96,8 @@ if __name__ == "__main__":
     axs[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
     axs[1].legend()
     fig.suptitle("Approximate LINF Error of Displacement and Stress")
-    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/u_x sigma_xy convergence plot LINF")
+    # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
+    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
     plt.show(block=True)
     plt.clf()
 

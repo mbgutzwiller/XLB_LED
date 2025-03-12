@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
 from tqdm import tqdm
 
-# wp.build.clear_kernel_cache()
+wp.build.clear_kernel_cache()
 plt.ion()
 
 # wp.config.print_launches = False
@@ -62,11 +62,11 @@ class SineWave2D_LED:
         return walls  # Return as many different indices sets as you need.
 
     def setup_boundary_conditions(self):
-        # # TODO: Adjust BCs here.
-        # walls = self.define_boundary_indices()
-        # bc_walls = DirichletBC_LED(indices=walls, velocity_set=self.velocity_set)
-        # self.boundary_conditions = [bc_walls]
-        self.boundary_conditions = []
+        # TODO: Adjust BCs here.
+        walls = self.define_boundary_indices()
+        bc_walls = DirichletBC_LED(indices=walls, velocity_set=self.velocity_set)
+        self.boundary_conditions = [bc_walls]
+        # self.boundary_conditions = []
 
     def setup_stepper(self):
         self.stepper_stream = LinearElastodynamicsStepperStream(
@@ -185,7 +185,7 @@ class SineWave2D_LED:
             plt.draw()
             plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
             # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
-            plt.pause(2)
+            plt.pause(1)
 
             # # Plot cut of vx, vy for constant y, x_axis
             # plt.clf()
@@ -249,7 +249,7 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 80  # Number of grid cells along one dimension
+    grid_size = 64  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = 200  # Number of collision/streaming steps
     pp_interval = 1  # Post process interval
