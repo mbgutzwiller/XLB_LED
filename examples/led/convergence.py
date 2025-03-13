@@ -15,15 +15,15 @@ if __name__ == "__main__":
     _run_id = int(time.time())
     domain_size = 1
     total_time = 1
-    c_k_led = 1.5
-    c_mu_led = 0.
+    c_k_led = 1.1
+    c_mu_led = 0.4
 
     compute_backend = ComputeBackend.WARP
     precision_policy = PrecisionPolicy.FP32FP32
 
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-    grid_sizes = [32, 64, 128, 256]
+    grid_sizes = [int(16 * 1.5**n) for n in range(8)]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
     l2_errors_u = []
