@@ -19,7 +19,6 @@ class D2Q4(VelocitySet):
         cx = [1, 0, -1, 0]
         cy = [0, 1, 0, -1]
         c = np.array(tuple(zip(cx, cy))).T
-        print(c)
         w = np.array([1/4, 1/4, 1/4, 1/4])
 
         # Call the parent constructor

@@ -1,6 +1,7 @@
 import warp as wp
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 import xlb
 from xlb.compute_backend import ComputeBackend
@@ -9,18 +10,20 @@ from xlb.precision_policy import PrecisionPolicy
 from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
 
 
+
 if __name__ == "__main__":
-    domain_size = 1  # Size of domain in meters
-    total_time = 1  # Total real world time
-    c_k_led = 1.1**0.5
-    c_mu_led = 0.4**0.5
+    _run_id = int(time.time())
+    domain_size = 1
+    total_time = 1
+    c_k_led = 1.5
+    c_mu_led = 0.
 
     compute_backend = ComputeBackend.WARP
     precision_policy = PrecisionPolicy.FP32FP32
 
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-    grid_sizes = [80, 120, 160, 240, 320]
+    grid_sizes = [32, 64, 128, 256]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
     l2_errors_u = []
@@ -44,7 +47,7 @@ if __name__ == "__main__":
         wp.c_led = wp.constant(c_led)
         wp.grid_size = wp.constant(grid_size)
 
-        stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
+        stability_factor = 2.0*np.sqrt(c_k_led+c_mu_led)/c_led
         print(f"Stability factor: {stability_factor}")
         assert stability_factor < 1, "Unstable"
 
@@ -55,51 +58,53 @@ if __name__ == "__main__":
         linf_errors_u.append(linf_error_u)
         linf_errors_sigma.append(linf_error_sigma)
         delta_xs.append(delta_x_led)
+
+        # Plotting L2 errors
+        C_u = l2_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
+        C_sigma = l2_errors_sigma[0] / (delta_xs[0] ** 2)
+        fig1, axs1 = plt.subplots(1, 2, figsize = (10, 5))
+        axs1[0].loglog(delta_xs, l2_errors_u, marker="o", markersize=8)
+        axs1[0].set_xlabel("delta_x [m]")
+        axs1[0].set_ylabel("error [m]")
+        axs1[0].grid(True, which="both")
+        axs1[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+        axs1[0].legend()
+        axs1[1].loglog(delta_xs, l2_errors_sigma, marker="o", markersize=8)
+        axs1[1].set_xlabel("delta_x [m]")
+        axs1[1].set_ylabel("error [N/m^2]")
+        axs1[1].grid(True, which="both")
+        axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+        axs1[1].legend()
+        fig1.suptitle("Approximate L2 Error of Displacement and Stress")
+        # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2")
+        plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2_{_run_id}")
+        plt.show(block=False)
+
+        # Plotting L2 errors
+        C_u = linf_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
+        C_sigma = linf_errors_sigma[0] / (delta_xs[0] ** 2)
+        C_sigma_linear = linf_errors_sigma[0] / (delta_xs[0])
+        fig2, axs2 = plt.subplots(1, 2, figsize = (10, 5))
+        axs2[0].loglog(delta_xs, linf_errors_u, marker="o", markersize=8)
+        axs2[0].set_xlabel("delta_x [m]")
+        axs2[0].set_ylabel("error [m]")
+        axs2[0].grid(True, which="both")
+        axs2[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+        axs2[0].legend()
+        axs2[1].loglog(delta_xs, linf_errors_sigma, marker="o", markersize=8)
+        axs2[1].set_xlabel("delta_x [m]")
+        axs2[1].set_ylabel("error [N/m^2]")
+        axs2[1].grid(True, which="both")
+        axs2[1].loglog(delta_xs, C_sigma_linear * np.array(delta_xs), "--", label="Slope = 1", alpha=1, color="orange")
+        axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
+        axs2[1].legend()
+        fig2.suptitle("Approximate LINF Error of Displacement and Stress")
+        # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
+        plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF_{_run_id}")
+        plt.show(block=False)
     print("Finished all runs.")
 
-    # Plotting L2 errors
-    C_u = l2_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
-    C_sigma = l2_errors_sigma[0] / (delta_xs[0] ** 2)
-    fig, axs = plt.subplots(1, 2, figsize = (10, 5))
-    axs[0].loglog(delta_xs, l2_errors_u, marker="o", markersize=8)
-    axs[0].set_xlabel("delta_x [m]")
-    axs[0].set_ylabel("error [m]")
-    axs[0].grid(True, which="both")
-    axs[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
-    axs[0].legend()
-    axs[1].loglog(delta_xs, l2_errors_sigma, marker="o", markersize=8)
-    axs[1].set_xlabel("delta_x [m]")
-    axs[1].set_ylabel("error [N/m^2]")
-    axs[1].grid(True, which="both")
-    axs[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
-    axs[1].legend()
-    fig.suptitle("Approximate L2 Error of Displacement and Stress")
-    # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2")
-    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2")
-    plt.show(block=True)
-    plt.clf()
 
-    # Plotting L2 errors
-    C_u = linf_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
-    C_sigma = linf_errors_sigma[0] / (delta_xs[0] ** 2)
-    fig, axs = plt.subplots(1, 2, figsize = (10, 5))
-    axs[0].loglog(delta_xs, linf_errors_u, marker="o", markersize=8)
-    axs[0].set_xlabel("delta_x [m]")
-    axs[0].set_ylabel("error [m]")
-    axs[0].grid(True, which="both")
-    axs[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
-    axs[0].legend()
-    axs[1].loglog(delta_xs, linf_errors_sigma, marker="o", markersize=8)
-    axs[1].set_xlabel("delta_x [m]")
-    axs[1].set_ylabel("error [N/m^2]")
-    axs[1].grid(True, which="both")
-    axs[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
-    axs[1].legend()
-    fig.suptitle("Approximate LINF Error of Displacement and Stress")
-    # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
-    plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
-    plt.show(block=True)
-    plt.clf()
 
 
 

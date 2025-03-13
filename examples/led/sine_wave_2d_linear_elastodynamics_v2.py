@@ -118,25 +118,32 @@ class SineWave2D_LED:
 
 
     def u_num_exact_x(self, x, y, t):
-        return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
+        return np.sin(4.*np.pi*x) * np.sin(2.*np.pi*y) * np.sin(4.*np.pi*(t-0.1))
+        # return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
     
     def u_num_exact_y(self, x, y, t):
-        return np.cos(4.*np.pi*(x-0.7*t)) * np.sin(2.*np.pi*(y-0.1*t)) * np.cos(4.*np.pi*(t+0.4))
+        return np.sin(4.*np.pi*x) * np.sin(2.*np.pi*y) * np.sin(4.*np.pi*(t+0.3))
+        # return np.cos(4.*np.pi*(x-0.7*t)) * np.sin(2.*np.pi*(y-0.1*t)) * np.cos(4.*np.pi*(t+0.4))
     
     def U_vx(self, x, y, t):
-        return 1.6*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4)) + 4.0*np.pi*np.sin(np.pi*(-1.2*t + 4.0*x))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(4.0*t - 0.4)) - 1.2*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))
+        return 4.*np.pi*np.sin(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.cos(4.*np.pi*(t - 1./10.))
+        # return 1.6*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4)) + 4.0*np.pi*np.sin(np.pi*(-1.2*t + 4.0*x))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(4.0*t - 0.4)) - 1.2*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))
     
     def U_vy(self, x, y, t):
-        return 2.8*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)) - 4.0*np.pi*np.sin(np.pi*(-0.2*t + 2.0*y))*np.sin(np.pi*(4.0*t + 1.6))*np.cos(np.pi*(-2.8*t + 4.0*x)) - 0.2*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6))
+        return 4.*np.pi*np.sin(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.cos(4.*np.pi*(t + 3./10.))
+        # return 2.8*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)) - 4.0*np.pi*np.sin(np.pi*(-0.2*t + 2.0*y))*np.sin(np.pi*(4.0*t + 1.6))*np.cos(np.pi*(-2.8*t + 4.0*x)) - 0.2*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6))
     
     def U_js(self, x, y, t):
-        return -wp.c_k_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))+2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
+        return -wp.c_k_led**(1./2.)*(4.*np.pi*np.cos(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.sin(4.*np.pi*(t - 1./10.)) + 2.*np.pi*np.cos(2.*np.pi*y)*np.sin(4.*np.pi*x)*np.sin(4.*np.pi*(t + 3./10.)))
+        # return -np.c_k_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))+2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
     
     def U_jd(self, x, y, t):
-        return -wp.c_mu_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))-2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
+        return -wp.c_mu_led**(1./2.)*(4.*np.pi*np.cos(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.sin(4.*np.pi*(t - 1./10.)) - 2.*np.pi*np.cos(2.*np.pi*y)*np.sin(4.*np.pi*x)*np.sin(4.*np.pi*(t + 3./10.)))
+        # return -np.c_mu_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))-2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
     
     def U_jxy(self,x, y, t):
-        return -wp.c_mu_led*(-2.0*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4))-4.0*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
+        return -wp.c_mu_led**(1./2.)*(2.*np.pi*np.cos(2.*np.pi*y)*np.sin(4.*np.pi*x)*np.sin(4.*np.pi*(t - 1./10.)) + 4.*np.pi*np.cos(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.sin(4.*np.pi*(t + 3./10.)))
+        # return -wp.c_mu_led*(-2.0*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4))-4.0*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
 
     def post_process(self, i, show_plot=False):
         # Write the results. We'll use JAX compute_backend for the post-processing
@@ -161,7 +168,7 @@ class SineWave2D_LED:
         # Compare solutions on cuts through 2d plane
         t = np.float32(i * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
-        plot_index = int(0. * (grid_size-1))
+        plot_index = int(0.57 * (grid_size-1))
         assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting index invalid"
         plot_index_num = plot_index
         domain_size = 1
@@ -226,12 +233,12 @@ class SineWave2D_LED:
         _U_js_ex = np.array([np.array([self.U_js(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
         _U_jd_ex = np.array([np.array([self.U_jd(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
         _U_jxy_ex = np.array([np.array([self.U_jxy(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        sigma_xx_ex = -(wp.c_k_led * _U_js_ex + wp.c_mu_led * _U_jd_ex)
-        sigma_yy_ex = -(wp.c_k_led * _U_js_ex - wp.c_mu_led * _U_jd_ex)
-        sigma_xy_ex = -(wp.c_mu_led * _U_jxy_ex)  
-        sigma_xx_num = -(wp.c_k_led * U_num_tilde[2, :, :] + wp.c_mu_led * U_num_tilde[3, :, :])
-        sigma_yy_num = -(wp.c_k_led * U_num_tilde[2, :, :] - wp.c_mu_led * U_num_tilde[3, :, :])
-        sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, :])
+        sigma_xx_ex = -(wp.c_k_led ** 0.5 * _U_js_ex + wp.c_mu_led ** 0.5 * _U_jd_ex)
+        sigma_yy_ex = -(wp.c_k_led ** 0.5 * _U_js_ex - wp.c_mu_led ** 0.5 * _U_jd_ex)
+        sigma_xy_ex = -(wp.c_mu_led ** 0.5 * _U_jxy_ex)  
+        sigma_xx_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] + wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
+        sigma_yy_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] - wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
+        sigma_xy_num = -(wp.c_mu_led ** 0.5 * U_num_tilde[4, :, :])
         # norm_error_sigma = np.linalg.norm(np.stack([(sigma_xx_ex - sigma_xx_num), (sigma_yy_ex - sigma_yy_num), (sigma_xy_ex - sigma_xy_num)], axis=0))
         norm_error_sigma = np.sum((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2)
         norm_sigma = np.sum((sigma_xx_ex) ** 2 + (sigma_yy_ex) ** 2 + (sigma_xy_ex) ** 2)
@@ -258,8 +265,8 @@ if __name__ == "__main__":
     total_time = 1  # Total real world time
     delta_t_led = total_time/num_steps
     c_led = delta_x_led/delta_t_led
-    c_k_led = 1.1**0.5
-    c_mu_led = 0.4**0.5
+    c_k_led = 1.1
+    c_mu_led = 0.4
     stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
 
     wp.grid_size = wp.constant(grid_size)
