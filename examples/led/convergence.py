@@ -44,16 +44,16 @@ if __name__ == "__main__":
             delta_t_led = total_time/num_steps
             c_led = delta_x_led/delta_t_led
 
-            wp.c_mu_led = wp.constant(c_mu_led)
-            wp.c_k_led = wp.constant(c_k_led)
-            wp.delta_t_led = wp.constant(delta_t_led)
-            wp.delta_x_led = wp.constant(delta_x_led)
-            wp.c_led = wp.constant(c_led)
-            wp.grid_size = wp.constant(grid_size)
-
             stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2)/c_led
             print(f"Stability factor: {stability_factor}")
             assert stability_factor < 1, "Unstable"
+
+            wp.c_mu_led = wp.constant(float(c_mu_led))
+            wp.c_k_led = wp.constant(float(c_k_led))
+            wp.delta_t_led = wp.constant(float(delta_t_led))
+            wp.delta_x_led = wp.constant(float(delta_x_led))
+            wp.c_led = wp.constant(float(c_led))
+            wp.grid_size = wp.constant(float(grid_size))
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
             error_u, error_sigma, linf_error_u, linf_error_sigma =  simulation.run(num_steps=num_steps, post_process_interval=1)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             axs2[1].legend()
             fig2.suptitle("Approximate LINF Error of Displacement and Stress")
             # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
-            plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_LINF_{np.round(c_k_led**2, 1)}_16_2_n_5")
+            plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_LINF_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_5")
             plt.show(block=False)
         print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
     print("Finished all runs.")
