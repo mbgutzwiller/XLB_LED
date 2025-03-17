@@ -22,9 +22,9 @@ if __name__ == "__main__":
     grid_sizes = [int(16 * 2**n) for n in range(6)]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
-    for grid_size, num_steps, i in zip(grid_sizes, num_stepss, range(len(grid_sizes))):
+    for c_k_led, c_mu_led in zip(c_k, c_mu):
         compute_backend = ComputeBackend.WARP
-        precision_policy = PrecisionPolicy.FP32FP32
+        precision_policy = PrecisionPolicy.FP64FP64
 
         velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         linf_errors_sigma = []
         delta_xs = []
 
-        for c_k_led, c_mu_led in zip(c_k, c_mu):
+        for grid_size, num_steps, i in zip(grid_sizes, num_stepss, range(len(grid_sizes))):
             import xlb
             from xlb.compute_backend import ComputeBackend
             from xlb.precision_policy import PrecisionPolicy
