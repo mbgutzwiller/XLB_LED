@@ -1,3 +1,7 @@
+import os
+os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes it wont automatically run on cpu if no gpu is available.
+
+
 import warp as wp
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,14 +11,15 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
+wp.build.clear_kernel_cache()
 
 
 
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    _c_k = [0.8]
-    _c_mu =[0.7]
+    _c_k = [1.5]
+    _c_mu =[0.]
 
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
@@ -85,9 +90,9 @@ if __name__ == "__main__":
                 axs1[1].grid(True, which="both")
                 axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
                 axs1[1].legend()
-                fig1.suptitle("Approximate L2 Error of Displacement and Stress")
-                # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot L2")
-                plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
+                fig1.suptitle("L2 Error of Displacement and Stress")
+                plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}_again")
+                # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
                 plt.show(block=False)
 
                 # Plotting L2 errors
@@ -108,9 +113,9 @@ if __name__ == "__main__":
                 axs2[1].loglog(delta_xs, C_sigma_linear * np.array(delta_xs), "--", label="Slope = 1", alpha=1, color="orange")
                 axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
                 axs2[1].legend()
-                fig2.suptitle("Approximate LINF Error of Displacement and Stress")
-                # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/dirichlet_u_x sigma_xy convergence plot LINF")
-                plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
+                fig2.suptitle("LINF Error of Displacement and Stress")
+                plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}_again")
+                # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
                 plt.show(block=False)
             print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
         print("Finished all runs.")

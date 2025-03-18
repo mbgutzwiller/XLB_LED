@@ -6,6 +6,9 @@ from xlb.compute_backend import ComputeBackend
 from xlb.grid import grid_factory
 from xlb import DefaultConfig
 from xlb.operator.boundary_masker import IndicesBoundaryMasker
+import os
+os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes 
+
 
 
 def init_xlb_env(velocity_set):
@@ -91,4 +94,6 @@ def test_bc_equilibrium_jax(dim, velocity_set, grid_shape):
 
 
 if __name__ == "__main__":
+    import os
+    os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes
     pytest.main()

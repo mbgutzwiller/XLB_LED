@@ -4,7 +4,7 @@ from xlb.precision_policy import PrecisionPolicy
 from xlb.grid import grid_factory
 from xlb.operator.stepper import LinearElastodynamicsStepperStream, LinearElastodynamicsStepperCollide
 from xlb.operator.equilibrium import Equilibrium_LED
-from xlb.operator.boundary_condition import DirichletBC_LED  # TODO: Add periodic and Dirichlet BCs.
+from xlb.operator.boundary_condition import DirichletBC_LED
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.utils import save_fields_vtk, save_image
 import xlb.velocity_set  # Done.

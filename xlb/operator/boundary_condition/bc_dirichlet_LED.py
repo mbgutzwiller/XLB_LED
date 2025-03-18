@@ -21,9 +21,7 @@ from xlb.operator.boundary_condition.boundary_condition_LED import (
 
 class DirichletBC_LED(BoundaryCondition_LED):
     """
-    Halfway Bounce-back boundary condition for a lattice Boltzmann method simulation.
-
-    TODO: Implement moving boundary conditions for this
+    Dirichlet BC for Lattice Boltzman for LED.
     """
 
     def __init__(
@@ -88,13 +86,12 @@ class DirichletBC_LED(BoundaryCondition_LED):
             _f = f_post
             for l in range(self.velocity_set.q):
                 # If the mask is missing (true, 1) then take the opposite index
-                for m in range(2):
-                    if missing_mask[l] == wp.uint8(1):
+                if missing_mask[l] == wp.uint8(1):
+                    for m in range(2):
                         # Get the pre-streaming distribution function in oppisite direction
                         # return negative of velocities
                         _f[l * 5 + m] = -f_pre[_opp_indices[l] * 5 + m]
-                for m in range(2, 5):
-                    if missing_mask[l] == wp.uint8(1):
+                    for m in range(2, 5):
                         # Get the pre-streaming distribution function in oppisite direction
                         _f[l * 5 + m] = f_pre[_opp_indices[l] * 5 + m]
             

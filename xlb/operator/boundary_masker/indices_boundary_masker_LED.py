@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 from xlb.compute_backend import ComputeBackend
 from xlb.operator.operator import Operator
-from xlb.operator.stream.stream import Stream
+from xlb.operator.stream.stream_LED import Stream_LED
 from xlb.grid import grid_factory
 from xlb.precision_policy import Precision
 
@@ -21,7 +21,7 @@ class IndicesBoundaryMasker_LED(Operator):
         compute_backend=None,
     ):
         # Make stream operator
-        self.stream = Stream(velocity_set, precision_policy, compute_backend)
+        self.stream = Stream_LED(velocity_set, precision_policy, compute_backend)
 
         # Call super
         super().__init__(velocity_set, precision_policy, compute_backend)

@@ -125,7 +125,7 @@ class HelperFunctionsBC_LED(object):
         #         fpop[l] = feq[l] + fpop1
         #     return fpop
 
-        # self.get_thread_data = get_thread_data
+        self.get_thread_data = get_thread_data
         # self.get_bc_fsum = get_bc_fsum
         # self.get_normal_vectors = get_normal_vectors
         # self.bounceback_nonequilibrium = bounceback_nonequilibrium

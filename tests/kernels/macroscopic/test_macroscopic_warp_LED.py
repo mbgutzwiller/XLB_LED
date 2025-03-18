@@ -6,6 +6,7 @@ from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.macroscopic import Macroscopic_LED
 from xlb.grid import grid_factory
 from xlb import DefaultConfig
+import warp as wp
 
 
 def init_xlb_env(velocity_set):
@@ -44,12 +45,25 @@ def test_macroscopic_warp(dim, velocity_set, grid_shape, U_num_tilde):
     compute_macro = Macroscopic_LED()
     U_num_tilde_calc = my_grid.create_field(cardinality=5)
     # u_calc = my_grid.create_field(cardinality=dim)
-
-    U_num_tilde_calc = compute_macro(f_eq, U_num_tilde_calc)
+    store_dt = wp.delta_t_led
+    # we do this such that the body force does not have an impact on the outcome.
+    # this makes the test more superficial but independent of the forcing function.
+    wp.delta_t_led = wp.constant(wp.float32(0.))
+    U_num_tilde_calc = compute_macro(f_eq, U_num_tilde_calc, 0.)
+    wp.delta_t_led = wp.constant(wp.float32(store_dt))
     
     assert np.allclose(U_num_tilde_calc.numpy(), np.array([0, 0, 0, 0, 0])), f"Computed U_num_tilde should be close to initialized U_num_tilde {np.array([0, 0, 0, 0, 0])} but is {U_num_tilde_calc.numpy()}"
     # assert np.allclose(u_calc.numpy(), velocity), f"Computed velocity should be close to initialized velocity {velocity}"
 
 
 if __name__ == "__main__":
+    wp.c_k_led = wp.constant(1.1)
+    wp.c_mu_led = wp.constant(0.4)
+    num_steps = 200
+    grid_size = 128
+    physical_time = 1
+    domain_size = 1
+    wp.delta_t_led = wp.constant(physical_time/num_steps)
+    wp.delta_x_led = wp.constant(domain_size/grid_size)
+    wp.c_led = wp.constant(wp.delta_x_led/wp.delta_t_led)
     pytest.main()
