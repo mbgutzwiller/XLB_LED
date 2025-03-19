@@ -35,55 +35,122 @@ class Initializer_LED(Operator):
 
         # Analytical functions to set initial f correctly (non trivial in contrast to fluid LBM)
         @wp.func
-        def u_num_displ_func(x: wp.float32, y: wp.float32, t: wp.float32):
-            _u_num_displ = _u_num_displ_vector_vec(0.)
-            _u_num_displ[0] = wp.sin(4.*wp.pi*(x-0.3*t)) * wp.cos(2.*wp.pi*(y-0.8*t)) * wp.sin(4.*wp.pi*(t-0.1))
-            _u_num_displ[1] = wp.cos(4.*wp.pi*(x-0.7*t)) * wp.sin(2.*wp.pi*(y-0.1*t)) * wp.cos(4.*wp.pi*(t+0.4))
+        def u_num_displ_func(x: Any, y: Any, t: Any):
+            _u_num_displ = _u_num_displ_vector_vec()
+            _4 = wp.float64(4.)
+            _03 = wp.float64(0.3)
+            _2 = wp.float64(2.)
+            _08 = wp.float64(0.8)
+            _01 = wp.float64(0.1)
+            _04 = wp.float64(0.4)
+            _07 = wp.float64(0.7)
+            pi = wp.float64(wp.pi)
+            _u_num_displ[0] = wp.sin(_4*pi*(x-_03*t)) * wp.cos(_2*pi*(y-_08*t)) * wp.sin(_4*pi*(t-_01))
+            _u_num_displ[1] = wp.cos(_4*pi*(x-_07*t)) * wp.sin(_2*pi*(y-_01*t)) * wp.cos(_4*pi*(t+_04))
             return _u_num_displ
 
         # This is the U_num_tilde, not the displacement.
         @wp.func
-        def U_func(x: wp.float32, y: wp.float32, t: wp.float32):
-            _U = _U_vector_vec(0.)
-            _U[0] = 1.6*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4)) + 4.0*wp.pi*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(4.0*t - 0.4)) - 1.2*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))
-            _U[1] = 2.8*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x)) - 0.2*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6))
-            _U[2] = -wp.c_k_led*(4.0*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))+2.0*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
-            _U[3] = -wp.c_mu_led*(4.0*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))-2.0*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
-            _U[4] = -wp.c_mu_led*(-2.0*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))-4.0*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)))
+        def U_func(x: Any, y: Any, t: Any):
+            _U = _U_vector_vec()
+            _1p6 = wp.float64(1.6)
+            _2p0 = wp.float64(2.0)
+            _1p2 = wp.float64(1.2)
+            _4p0 = wp.float64(4.0)
+            _0p4 = wp.float64(0.4)
+            _0p2 = wp.float64(0.2)
+            _2p8 = wp.float64(2.8)
+            pi = wp.float64(wp.pi)
+            _U[0] = _1p6*pi*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4)) + _4p0*pi*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(_4p0*t - _0p4)) - _1p2*pi*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(-_1p2*t + _4p0*x))
+            _U[1] = _2p8*pi*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) - _4p0*pi*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.sin(pi*(_4p0*t + _1p6))*wp.cos(pi*(-_2p8*t + _4p0*x)) - _0p2*pi*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6))
+            _U[2] = -wp.float64(wp.c_k_led)*(_4p0*pi*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(-_1p2*t + _4p0*x))+_2p0*pi*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)))
+            _U[3] = -wp.float64(wp.c_mu_led)*(_4p0*pi*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(-_1p2*t + _4p0*x))-_2p0*pi*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)))
+            _U[4] = -wp.float64(wp.c_mu_led)*(-_2p0*pi*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4))-_4p0*pi*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)))
             return _U
         
         @wp.func
-        def dUdx_func(x: wp.float32, y: wp.float32, t: wp.float32):
+        def dUdx_func(x: Any, y: Any, t: Any):
             _dUdx = _U_vector_vec()
-            _dUdx[0] = 6.4*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) + 4.8*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y)) + 16.0*wp.pi**2.0*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(4.0*t - 0.4))
-            _dUdx[1] = 16.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6)) + 0.8*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) + 11.2*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6))
-            _dUdx[2] = -wp.c_k_led*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y)))
-            _dUdx[3] = -wp.c_mu_led*(8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))) 
-            _dUdx[4] = -wp.c_mu_led*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6)))
+            _8p0 = wp.float64(8.0)
+            _2p0 = wp.float64(2.0)
+            _6p4 = wp.float64(6.4)
+            _16p0 = wp.float64(16.0)
+            _4p0 = wp.float64(4.0)
+            _4p8 = wp.float64(4.8)
+            _2p8 = wp.float64(2.8)
+            _1p6 = wp.float64(1.6)
+            _0p4 = wp.float64(0.4)
+            _0p2 = wp.float64(0.2)
+            _0p8 = wp.float64(0.8)
+            _1p2 = wp.float64(1.2)
+            _11p2 = wp.float64(11.2)
+            pi = wp.float64(wp.pi)
+            _c_k = wp.float64(wp.c_k_led)
+            _c_mu = wp.float64(wp.c_mu_led)
+            _dUdx[0] = _6p4*pi**_2p0*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p2*t + _4p0*x)) + _4p8*pi**_2p0*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y)) + _16p0*pi**_2p0*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(-_1p2*t + _4p0*x))*wp.cos(pi*(_4p0*t - _0p4))
+            _dUdx[1] = _16p0*pi**_2p0*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.sin(pi*(_4p0*t + _1p6)) + _0p8*pi**_2p0*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) + _11p2*pi**_2p0*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(_4p0*t + _1p6))
+            _dUdx[2] = -_c_k*(-_8p0*pi**_2p0*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) - _16p0*pi**_2p0*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y)))
+            _dUdx[3] = -_c_mu*(_8p0*pi**_2p0*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) - _16p0*pi**_2p0*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y))) 
+            _dUdx[4] = -_c_mu*(-_8p0*pi**_2p0*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p2*t + _4p0*x)) - _16p0*pi**_2p0*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(_4p0*t + _1p6)))
             return _dUdx
         
         @wp.func
-        def dUdy_func(x: wp.float32, y: wp.float32, t: wp.float32):
+        def dUdy_func(x: Any, y: Any, t: Any):
             _dUdy = _U_vector_vec()
-            _dUdy[0] = -8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(4.0*t - 0.4)) + 2.4*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) + 3.2*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))
-            _dUdy[1] = 5.6*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) + 0.4*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6)) - 8.0*wp.pi**2.0*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))
-            _dUdy[2] = -wp.c_k_led*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6)))
-            _dUdy[3] = -wp.c_mu_led*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) + 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6)))
-            _dUdy[4] = -wp.c_mu_led*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y)))
+            _8p0 = wp.float64(8.0)
+            _2p0 = wp.float64(2.0)
+            _5p6 = wp.float64(5.6)
+            _2p4 = wp.float64(2.4)
+            _3p2 = wp.float64(3.2)
+            _4p0 = wp.float64(4.0)
+            _2p8 = wp.float64(2.8)
+            _1p6 = wp.float64(1.6)
+            _0p4 = wp.float64(0.4)
+            _0p2 = wp.float64(0.2)
+            _1p2 = wp.float64(1.2)
+            pi = wp.float64(wp.pi)
+            _c_k = wp.float64(wp.c_k_led)
+            _c_mu = wp.float64(wp.c_mu_led)
+            _dUdy[0] = -_8p0*pi**_2p0*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.cos(pi*(_4p0*t - _0p4)) + _2p4*pi**_2p0*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p2*t + _4p0*x)) + _3p2*pi**_2p0*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y))
+            _dUdy[1] = _5p6*pi**_2p0*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) + _0p4*pi**_2p0*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(_4p0*t + _1p6)) - _8p0*pi**_2p0*wp.sin(pi*(_4p0*t + _1p6))*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))
+            _dUdy[2] = -_c_k*(-_8p0*pi**_2p0*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p2*t + _4p0*x)) - _4p0*pi**_2p0*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(_4p0*t + _1p6)))
+            _dUdy[3] = -_c_mu*(-_8p0*pi**_2p0*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p2*t + _4p0*x)) + _4p0*pi**_2p0*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(_4p0*t + _1p6)))
+            _dUdy[4] = -_c_mu*(-_8p0*pi**_2p0*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) - _4p0*pi**_2p0*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y)))
             return _dUdy
 
         @wp.func
-        def B_func(x: wp.float32, y: wp.float32, t: wp.float32):
+        def B_func(x: Any, y: Any, t: Any):
             _B = _U_vector_vec()
             # # _B[0] = wp.pi**2.*wp.cos(wp.pi*(t*(3.0/1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t*(4.0/5.0)-y)*2.0)*wp.cos(wp.pi*(t-1.0/1.0e+1)*4.0)*(-4.8e+1/5.0)-wp.pi**2.*wp.cos(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t*(7.0/1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t+2.0/5.0)*4.0)*(4.4e+1/5.0)+wp.pi**2.*wp.cos(wp.pi*(t*(3.0/1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t*(4.0/5.0)-y)*2.0)*wp.sin(wp.pi*(t-1.0/1.0e+1)*4.0)*(9.6e+1/2.5e+1)-wp.pi**2.*wp.cos(wp.pi*(t*(4.0/5.0)-y)*2.0)*wp.sin(wp.pi*(t*(3.0/1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t-1.0/1.0e+1)*4.0)*(2.8e+1/5.0)+wp.pi**2.*wp.sin(wp.pi*(t*(3.0/1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t*(4.0/5.0)-y)*2.0)*wp.cos(wp.pi*(t-1.0/1.0e+1)*4.0)*(6.4e+1/5.0)
             # # _B[1] = wp.pi**2.*wp.cos(wp.pi*(t*(7.0/1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t+2.0/5.0)*4.0)*(8.0/5.0)+wp.pi**2.*wp.cos(wp.pi*(t*(7.0/1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t/1.0e+1-y)*2.0)*wp.cos(wp.pi*(t+2.0/5.0)*4.0)*(2.87e+2/2.5e+1)+wp.pi**2.*wp.cos(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t*(7.0/1.0e+1)-x)*4.0)*wp.cos(wp.pi*(t+2.0/5.0)*4.0)*(2.8e+1/2.5e+1)-wp.pi**2.*wp.cos(wp.pi*(t*(3.0/1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t*(4.0/5.0)-y)*2.0)*wp.sin(wp.pi*(t-1.0/1.0e+1)*4.0)*(4.4e+1/5.0)-wp.pi**2.*wp.sin(wp.pi*(t*(7.0/1.0e+1)-x)*4.0)*wp.sin(wp.pi*(t/1.0e+1-y)*2.0)*wp.sin(wp.pi*(t+2.0/5.0)*4.0)*(1.12e+2/5.0)
-            _B[0] = wp.c_mu_led*wp.c_mu_led*(8.*wp.pi**2.*wp.cos(2.*wp.pi*(t/10. - y))*wp.sin(4.*wp.pi*((7.*t)/10. - x))*wp.cos(4.*wp.pi*(t + 2./5.)) - 16.*wp.pi**2.*wp.cos(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*((3.*t)/10. - x))*wp.sin(4.*wp.pi*(t - 1./10.))) - wp.c_mu_led*wp.c_mu_led*(8.*wp.pi**2.*wp.cos(2.*wp.pi*(t/10. - y))*wp.sin(4.*wp.pi*((7.*t)/10. - x))*wp.cos(4.*wp.pi*(t + 2./5.)) + 4.*wp.pi**2.*wp.cos(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*((3.*t)/10. - x))*wp.sin(4.*wp.pi*(t - 1./10.))) - wp.c_k_led*wp.c_k_led*(8.*wp.pi**2.*wp.cos(2.*wp.pi*(t/10. - y))*wp.sin(4.*wp.pi*((7.*t)/10. - x))*wp.cos(4.*wp.pi*(t + 2./5.)) + 16.*wp.pi**2.*wp.cos(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*((3.*t)/10. - x))*wp.sin(4.*wp.pi*(t - 1./10.))) - (48.*wp.pi**2.*wp.cos(4.*wp.pi*((3.*t)/10. - x))*wp.cos(2.*wp.pi*((4.*t)/5. - y))*wp.cos(4.*wp.pi*(t - 1./10.)))/5. + (96.*wp.pi**2.*wp.cos(4.*wp.pi*((3.*t)/10. - x))*wp.sin(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*(t - 1./10.)))/25. + 20.*wp.pi**2.*wp.cos(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*((3.*t)/10. - x))*wp.sin(4.*wp.pi*(t - 1./10.)) + (64.*wp.pi**2.*wp.sin(4.*wp.pi*((3.*t)/10. - x))*wp.sin(2.*wp.pi*((4.*t)/5. - y))*wp.cos(4.*wp.pi*(t - 1./10.)))/5.
-            _B[1] = (8.*wp.pi**2.*wp.cos(4.*wp.pi*((7.*t)/10. - x))*wp.cos(2.*wp.pi*(t/10. - y))*wp.sin(4.*wp.pi*(t + 2./5.)))/5. - wp.c_mu_led*wp.c_mu_led*(4.*wp.pi**2.*wp.cos(4.*wp.pi*((7.*t)/10. - x))*wp.sin(2.*wp.pi*(t/10. - y))*wp.cos(4.*wp.pi*(t + 2./5.)) - 8.*wp.pi**2.*wp.cos(4.*wp.pi*((3.*t)/10. - x))*wp.sin(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*(t - 1./10.))) - wp.c_mu_led*wp.c_mu_led*(16.*wp.pi**2.*wp.cos(4.*wp.pi*((7.*t)/10. - x))*wp.sin(2.*wp.pi*(t/10. - y))*wp.cos(4.*wp.pi*(t + 2./5.)) + 8.*wp.pi**2.*wp.cos(4.*wp.pi*((3.*t)/10. - x))*wp.sin(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*(t - 1./10.))) - wp.c_k_led*wp.c_k_led*(4.*wp.pi**2.*wp.cos(4.*wp.pi*((7.*t)/10. - x))*wp.sin(2.*wp.pi*(t/10. - y))*wp.cos(4.*wp.pi*(t + 2./5.)) + 8.*wp.pi**2.*wp.cos(4.*wp.pi*((3.*t)/10. - x))*wp.sin(2.*wp.pi*((4.*t)/5. - y))*wp.sin(4.*wp.pi*(t - 1./10.))) + (597.*wp.pi**2.*wp.cos(4.*wp.pi*((7.*t)/10. - x))*wp.sin(2.*wp.pi*(t/10. - y))*wp.cos(4.*wp.pi*(t + 2./5.)))/25. + (28.*wp.pi**2.*wp.cos(2.*wp.pi*(t/10. - y))*wp.sin(4.*wp.pi*((7.*t)/10. - x))*wp.cos(4.*wp.pi*(t + 2./5.)))/25. - (112.*wp.pi**2.*wp.sin(4.*wp.pi*((7.*t)/10. - x))*wp.sin(2.*wp.pi*(t/10. - y))*wp.sin(4.*wp.pi*(t + 2./5.)))/5.
+            
+            _c_mu = wp.float64(wp.c_mu_led)
+            _c_k = wp.float64(wp.c_k_led)
+            _8p0 = wp.float64(8.0)
+            _2p0 = wp.float64(2.0)
+            _10p0 = wp.float64(10.0)
+            _7p0 = wp.float64(7.0)
+            _5p0 = wp.float64(5.)
+            _16p0 = wp.float64(16.0)
+            _3p0 = wp.float64(3.0)
+            _25p0 = wp.float64(25.0)
+            _597p0 = wp.float64(597.0)
+            _28p0 = wp.float64(28.0)
+            _112p0 = wp.float64(112.)
+            _48p0 = wp.float64(48.)
+            _64p0 = wp.float64(64.)
+            _4p0 = wp.float64(4.0)
+            _1p0 = wp.float64(1.0)
+            _20p0 = wp.float64(20.0)
+            _96p0 = wp.float64(96.)
+            pi = wp.float64(wp.pi)
+            _B[0] = _c_mu*_c_mu*(_8p0*pi**_2p0*wp.cos(_2p0*pi*(t/_10p0 - y))*wp.sin(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.cos(_4p0*pi*(t + _2p0/_5p0)) - _16p0*pi**_2p0*wp.cos(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_4p0*pi*(t - _1p0/_10p0))) - _c_mu*_c_mu*(_8p0*pi**_2p0*wp.cos(_2p0*pi*(t/_10p0 - y))*wp.sin(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.cos(_4p0*pi*(t + _2p0/_5p0)) + _4p0*pi**_2p0*wp.cos(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_4p0*pi*(t - _1p0/_10p0))) - _c_k*_c_k*(_8p0*pi**_2p0*wp.cos(_2p0*pi*(t/_10p0 - y))*wp.sin(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.cos(_4p0*pi*(t + _2p0/_5p0)) + _16p0*pi**_2p0*wp.cos(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_4p0*pi*(t - _1p0/_10p0))) - (_48p0*pi**_2p0*wp.cos(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.cos(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.cos(_4p0*pi*(t - _1p0/_10p0)))/_5p0 + (_96p0*pi**_2p0*wp.cos(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*(t - _1p0/_10p0)))/_25p0 + _20p0*pi**_2p0*wp.cos(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_4p0*pi*(t - _1p0/_10p0)) + (_64p0*pi**_2p0*wp.sin(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.cos(_4p0*pi*(t - _1p0/_10p0)))/_5p0
+            _B[1] = (_8p0*pi**_2p0*wp.cos(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.cos(_2p0*pi*(t/_10p0 - y))*wp.sin(_4p0*pi*(t + _2p0/_5p0)))/_5p0 - _c_mu*_c_mu*(_4p0*pi**_2p0*wp.cos(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.sin(_2p0*pi*(t/_10p0 - y))*wp.cos(_4p0*pi*(t + _2p0/_5p0)) - _8p0*pi**_2p0*wp.cos(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*(t - _1p0/_10p0))) - _c_mu*_c_mu*(_16p0*pi**_2p0*wp.cos(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.sin(_2p0*pi*(t/_10p0 - y))*wp.cos(_4p0*pi*(t + _2p0/_5p0)) + _8p0*pi**_2p0*wp.cos(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*(t - _1p0/_10p0))) - _c_k*_c_k*(_4p0*pi**_2p0*wp.cos(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.sin(_2p0*pi*(t/_10p0 - y))*wp.cos(_4p0*pi*(t + _2p0/_5p0)) + _8p0*pi**_2p0*wp.cos(_4p0*pi*((_3p0*t)/_10p0 - x))*wp.sin(_2p0*pi*((_4p0*t)/_5p0 - y))*wp.sin(_4p0*pi*(t - _1p0/_10p0))) + (_597p0*pi**_2p0*wp.cos(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.sin(_2p0*pi*(t/_10p0 - y))*wp.cos(_4p0*pi*(t + _2p0/_5p0)))/_25p0 + (_28p0*pi**_2p0*wp.cos(_2p0*pi*(t/_10p0 - y))*wp.sin(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.cos(_4p0*pi*(t + _2p0/_5p0)))/_25p0 - (_112p0*pi**_2p0*wp.sin(_4p0*pi*((_7p0*t)/_10p0 - x))*wp.sin(_2p0*pi*(t/_10p0 - y))*wp.sin(_4p0*pi*(t + _2p0/_5p0)))/_5p0
             # _B[0] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))) - wp.c_mu_led**2.0*(8.0*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))) + 12.8*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(4.0*t - 0.4)) - 3.84*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) - 20.0*wp.pi**2.0*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y)) - 9.6*wp.pi**2.0*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(4.0*t - 0.4))
             # _B[1] = -wp.c_k_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) - 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6))) - wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) - 16.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6))) + wp.c_mu_led**2.0*(-8.0*wp.pi**2.0*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.2*t + 4.0*x)) + 4.0*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6))) - 22.4*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6)) - 1.12*wp.pi**2.0*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 23.88*wp.pi**2.0*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(4.0*t + 1.6)) + 1.6*wp.pi**2.0*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))
-            _B[2] = 0.0
-            _B[3] = 0.0
-            _B[4] = 0.0
+            _B[2] = wp.float64(0.0)
+            _B[3] = wp.float64(0.0)
+            _B[4] = wp.float64(0.0)
             return _B
         
         @wp.func
@@ -99,11 +166,14 @@ class Initializer_LED(Operator):
         @wp.func
         def phi_y_lb_func(_U: Any):
             _phi_y = _U_vector_vec()
-            _phi_y[0] = wp.c_mu_led*_U[4]/wp.c_led
-            _phi_y[1] = (wp.c_k_led*_U[2]-wp.c_mu_led*_U[3])/wp.c_led
-            _phi_y[2] = wp.c_k_led*_U[1]/wp.c_led
-            _phi_y[3] = -wp.c_mu_led*_U[1]/wp.c_led
-            _phi_y[4] = wp.c_mu_led*_U[0]/wp.c_led
+            _c = wp.float64(wp.c_led)
+            _c_k = wp.float64(wp.c_k_led)
+            _c_mu = wp.float64(wp.c_mu_led)
+            _phi_y[0] = _c_mu*_U[4]/_c
+            _phi_y[1] = (_c_k*_U[2]-_c_mu*_U[3])/_c
+            _phi_y[2] = _c_k*_U[1]/_c
+            _phi_y[3] = -_c_mu*_U[1]/_c
+            _phi_y[4] = _c_mu*_U[0]/_c
             return _phi_y
         
             
@@ -112,24 +182,21 @@ class Initializer_LED(Operator):
         def initial_conditions_v2_kernel(f: wp.array4d(dtype=Any), U_num_tilde: wp.array4d(dtype=Any), u_num_displ_out: wp.array4d(dtype=Any)):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
-            x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
-            y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
+            x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.float64(wp.delta_x_led)
+            y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.float64(wp.delta_x_led)
             t = self.compute_dtype(0.0)
             #evaluate relevant properties from analytical solutions
             _u_num_displ = u_num_displ_func(x, y, t)
             _U = U_func(x, y, t)
             _B = B_func(x, y, t)*wp.delta_t_led
 
-            # for i in range(2):
-            #     _U[i] += _B[i] * wp.float32(0.5)
-
             _dUdx = dUdx_func(x, y, t)*wp.delta_x_led
             _dUdy = dUdy_func(x, y, t)*wp.delta_x_led
             _f = _f_vector_vec()
-            _f0 = wp.float32(0.25)*((_U+wp.float32(wp.float32(2.0))*phi_x_lb_func(_U)) + wp.float32(0.5)*(-(_B+wp.float32(wp.float32(2.0))*phi_x_lb_func(_B)) - _dUdx - phi_x_lb_func(_dUdx) + phi_y_lb_func(_dUdy) + wp.float32(wp.float32(2.0))*(phi_x_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
-            _f1 = wp.float32(0.25)*((_U+wp.float32(wp.float32(2.0))*phi_y_lb_func(_U)) + wp.float32(0.5)*(-(_B+wp.float32(wp.float32(2.0))*phi_y_lb_func(_B)) - _dUdy + phi_x_lb_func(_dUdx) - phi_y_lb_func(_dUdy) + wp.float32(wp.float32(2.0))*(phi_y_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
-            _f2 = wp.float32(0.25)*((_U-wp.float32(wp.float32(2.0))*phi_x_lb_func(_U)) + wp.float32(0.5)*(-(_B-wp.float32(wp.float32(2.0))*phi_x_lb_func(_B)) + _dUdx - phi_x_lb_func(_dUdx) + phi_y_lb_func(_dUdy) - wp.float32(wp.float32(2.0))*(phi_x_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
-            _f3 = wp.float32(0.25)*((_U-wp.float32(wp.float32(2.0))*phi_y_lb_func(_U)) + wp.float32(0.5)*(-(_B-wp.float32(wp.float32(2.0))*phi_y_lb_func(_B)) + _dUdy + phi_x_lb_func(_dUdx) - phi_y_lb_func(_dUdy) - wp.float32(wp.float32(2.0))*(phi_y_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
+            _f0 = wp.float64(0.25)*((_U+wp.float64(wp.float64(2.0))*phi_x_lb_func(_U)) + wp.float64(0.5)*(-(_B+wp.float64(wp.float64(2.0))*phi_x_lb_func(_B)) - _dUdx - phi_x_lb_func(_dUdx) + phi_y_lb_func(_dUdy) + wp.float64(wp.float64(2.0))*(phi_x_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
+            _f1 = wp.float64(0.25)*((_U+wp.float64(wp.float64(2.0))*phi_y_lb_func(_U)) + wp.float64(0.5)*(-(_B+wp.float64(wp.float64(2.0))*phi_y_lb_func(_B)) - _dUdy + phi_x_lb_func(_dUdx) - phi_y_lb_func(_dUdy) + wp.float64(wp.float64(2.0))*(phi_y_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
+            _f2 = wp.float64(0.25)*((_U-wp.float64(wp.float64(2.0))*phi_x_lb_func(_U)) + wp.float64(0.5)*(-(_B-wp.float64(wp.float64(2.0))*phi_x_lb_func(_B)) + _dUdx - phi_x_lb_func(_dUdx) + phi_y_lb_func(_dUdy) - wp.float64(wp.float64(2.0))*(phi_x_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
+            _f3 = wp.float64(0.25)*((_U-wp.float64(wp.float64(2.0))*phi_y_lb_func(_U)) + wp.float64(0.5)*(-(_B-wp.float64(wp.float64(2.0))*phi_y_lb_func(_B)) + _dUdy + phi_x_lb_func(_dUdx) - phi_y_lb_func(_dUdy) - wp.float64(wp.float64(2.0))*(phi_y_lb_func(phi_x_lb_func(_dUdx)+phi_y_lb_func(_dUdy)))))
             
             # # dir x
             # _f0 = 0.25*((_U+2.0*phi_x_lb(_U)) + 0.5*(-(_B+2.0*phi_x_lb(_B)) - _dUdx - phi_x_lb(_dUdx) + phi_y_lb(_dUdy) + 2.0*(phi_x_lb(phi_x_lb(_dUdx)+phi_y_lb(_dUdy)))))

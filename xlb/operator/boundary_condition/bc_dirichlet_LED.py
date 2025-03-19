@@ -65,10 +65,19 @@ class DirichletBC_LED(BoundaryCondition_LED):
 
 
         @wp.func
-        def dudt_tilde_func(x: wp.float32, y: wp.float32, t: wp.float32):
-            _dudt_D_tilde = _dudt_D_tilde_vector_vec(0.)
-            _dudt_D_tilde[0] = 1.6*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4)) + 4.0*wp.pi*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(4.0*t - 0.4)) - 1.2*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))
-            _dudt_D_tilde[1] = 2.8*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x)) - 0.2*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6))
+        def dudt_tilde_func(x: Any, y: Any, t: Any):
+            _dudt_D_tilde = _dudt_D_tilde_vector_vec()
+            _1p6 = wp.float64(1.6)
+            _2p0 = wp.float64(2.0)
+            _4p0 = wp.float64(4.0)
+            _1p2 = wp.float64(1.2)
+            _0p4 = wp.float64(0.4)
+            _0p2 = wp.float64(0.2)
+            _2p8 = wp.float64(2.8)
+            _4p0 = wp.float64(4.0)
+            pi = wp.float64(wp.pi)
+            _dudt_D_tilde[0] = _1p6*pi*wp.sin(pi*(-_1p6*t + _2p0*y))*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.sin(pi*(_4p0*t - _0p4)) + _4p0*pi*wp.sin(pi*(-_1p2*t + _4p0*x))*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(_4p0*t - _0p4)) - _1p2*pi*wp.sin(pi*(_4p0*t - _0p4))*wp.cos(pi*(-_1p6*t + _2p0*y))*wp.cos(pi*(-_1p2*t + _4p0*x))
+            _dudt_D_tilde[1] = _2p8*pi*wp.sin(pi*(-_2p8*t + _4p0*x))*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6)) - _4p0*pi*wp.sin(pi*(-_0p2*t + _2p0*y))*wp.sin(pi*(_4p0*t + _1p6))*wp.cos(pi*(-_2p8*t + _4p0*x)) - _0p2*pi*wp.cos(pi*(-_2p8*t + _4p0*x))*wp.cos(pi*(-_0p2*t + _2p0*y))*wp.cos(pi*(_4p0*t + _1p6))
             return _dudt_D_tilde
         
         # Construct the functional for this BC
@@ -99,26 +108,28 @@ class DirichletBC_LED(BoundaryCondition_LED):
             # TODO: make this more efficient, maybe use c from velocity set and access directions with index, define boundary prior.
             for l in range(4):
                 if missing_mask[l] == wp.uint8(1):
+                    _x = wp.float64(0.)
+                    _y = wp.float64(0.)
                     if l == 0:
                         i = 1
                         j = 0
-                        _x = 0.
-                        _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
+                        _x = wp.float64(0.)
+                        _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.float64(wp.delta_x_led)
                     elif l == 1:
                         i = 0
                         j = 1
-                        _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
-                        _y = 0. 
+                        _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.float64(wp.delta_x_led)
+                        _y = wp.float64(0.)
                     elif l == 2:
                         i = -1
                         j = 0
-                        _x = 1.
-                        _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.delta_x_led
+                        _x = wp.float64(1.)
+                        _y = (self.compute_dtype(index[1]) + self.compute_dtype(0.5)) * wp.float64(wp.delta_x_led)
                     elif l == 3:
                         i = 0
                         j = -1
-                        _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.delta_x_led
-                        _y = 1.
+                        _x = (self.compute_dtype(index[0]) + self.compute_dtype(0.5)) * wp.float64(wp.delta_x_led)
+                        _y = wp.float64(1.)
                     _dudt_D_tilde = dudt_tilde_func(_x, _y, (self.compute_dtype(timestep)+self.compute_dtype(0.5))*wp.delta_t_led)
                     # Add contribution of S_ij*u_D_tilde
                     _f[l * 5 + 0] += self.compute_dtype(0.5) * _dudt_D_tilde[0]

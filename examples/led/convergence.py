@@ -1,5 +1,5 @@
 import os
-os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes it wont automatically run on cpu if no gpu is available.
+# os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes it wont automatically run on cpu if no gpu is available.
 
 
 import warp as wp
@@ -24,13 +24,13 @@ if __name__ == "__main__":
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
 
-    grid_sizes = [int(16 * 2**n) for n in range(4)]
+    grid_sizes = [int(16 * 2**n) for n in range(6)]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for run_i in range(3):
         for c_k_led, c_mu_led in zip(c_k, c_mu):
             compute_backend = ComputeBackend.WARP
-            precision_policy = PrecisionPolicy.FP32FP32
+            precision_policy = PrecisionPolicy.FP64FP64
 
             velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
@@ -57,17 +57,16 @@ if __name__ == "__main__":
                 print(f"Stability factor: {stability_factor}")
                 assert stability_factor < 1, "Unstable"
 
-                wp.c_mu_led = wp.constant(c_mu_led)
-                wp.c_k_led = wp.constant(c_k_led)
-                wp.delta_t_led = wp.constant(delta_t_led)
-                wp.delta_x_led = wp.constant(delta_x_led)
-                wp.c_led = wp.constant(c_led)
-                wp.grid_size = wp.constant(grid_size)
+                wp.c_mu_led = wp.constant(wp.float64(c_mu_led))
+                wp.c_k_led = wp.constant(wp.float64(c_k_led))
+                wp.delta_t_led = wp.constant(wp.float64(delta_t_led))
+                wp.delta_x_led = wp.constant(wp.float64(delta_x_led))
+                wp.c_led = wp.constant(wp.float64(c_led))
+                wp.grid_size = wp.constant(wp.float64(grid_size))
 
                 simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
                 wp.build.clear_kernel_cache()
                 error_u, error_sigma, linf_error_u, linf_error_sigma = simulation.run(num_steps=num_steps, post_process_interval=1)
-                print(np.float32(wp.c_k_led)**2)
                 l2_errors_u.append(error_u)
                 l2_errors_sigma.append(error_sigma)
                 linf_errors_u.append(linf_error_u)
@@ -91,8 +90,8 @@ if __name__ == "__main__":
                 axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
                 axs1[1].legend()
                 fig1.suptitle("L2 Error of Displacement and Stress")
-                plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}_again")
-                # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
+                # plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
+                plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}_fp64")
                 plt.show(block=False)
 
                 # Plotting L2 errors
@@ -114,8 +113,8 @@ if __name__ == "__main__":
                 axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
                 axs2[1].legend()
                 fig2.suptitle("LINF Error of Displacement and Stress")
-                plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}_again")
-                # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
+                # plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
+                plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}_fp64")
                 plt.show(block=False)
             print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
         print("Finished all runs.")

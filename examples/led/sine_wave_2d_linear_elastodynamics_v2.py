@@ -144,7 +144,6 @@ class SineWave2D_LED:
             # If the compute_backend is warp, we need to drop the last dimension added by warp for 2D simulations
             wp.synchronize_device()
             wp.synchronize()
-            # U_num_tilde = wp.to_jax(self.stepper_collide.macroscopic_LED(self.f_0, self.U_num_tilde, wp.float32(0)))[..., 0]
             U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
             u_num_displ = wp.to_jax(self.u_num_displ_1)[..., 0]
 
@@ -159,7 +158,7 @@ class SineWave2D_LED:
         # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
         # Compare solutions on cuts through 2d plane
-        t = np.float32(i * wp.delta_t_led)  #
+        t = np.float64(wp.float64(i) * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
         plot_index = int(0. * (grid_size-1))
         assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting index invalid"
@@ -226,12 +225,14 @@ class SineWave2D_LED:
         _U_js_ex = np.array([np.array([self.U_js(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
         _U_jd_ex = np.array([np.array([self.U_jd(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
         _U_jxy_ex = np.array([np.array([self.U_jxy(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        sigma_xx_ex = -(wp.c_k_led * _U_js_ex + wp.c_mu_led * _U_jd_ex)
-        sigma_yy_ex = -(wp.c_k_led * _U_js_ex - wp.c_mu_led * _U_jd_ex)
-        sigma_xy_ex = -(wp.c_mu_led * _U_jxy_ex)  
-        sigma_xx_num = -(wp.c_k_led * U_num_tilde[2, :, :] + wp.c_mu_led * U_num_tilde[3, :, :])
-        sigma_yy_num = -(wp.c_k_led * U_num_tilde[2, :, :] - wp.c_mu_led * U_num_tilde[3, :, :])
-        sigma_xy_num = -(wp.c_mu_led * U_num_tilde[4, :, :])
+        c_k = np.float64(wp.c_k_led)
+        c_mu = np.float64(wp.c_mu_led)
+        sigma_xx_ex = -(c_k * _U_js_ex + c_mu * _U_jd_ex)
+        sigma_yy_ex = -(c_k * _U_js_ex - c_mu * _U_jd_ex)
+        sigma_xy_ex = -(c_mu * _U_jxy_ex)  
+        sigma_xx_num = -(c_k * U_num_tilde[2, :, :] + c_mu * U_num_tilde[3, :, :])
+        sigma_yy_num = -(c_k * U_num_tilde[2, :, :] - c_mu * U_num_tilde[3, :, :])
+        sigma_xy_num = -(c_mu * U_num_tilde[4, :, :])
         # norm_error_sigma = np.linalg.norm(np.stack([(sigma_xx_ex - sigma_xx_num), (sigma_yy_ex - sigma_yy_num), (sigma_xy_ex - sigma_xy_num)], axis=0))
         norm_error_sigma = np.sum((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2)
         norm_sigma = np.sum((sigma_xx_ex) ** 2 + (sigma_yy_ex) ** 2 + (sigma_xy_ex) ** 2)
@@ -262,12 +263,12 @@ if __name__ == "__main__":
     c_mu_led = 0.4**0.5
     stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
 
-    wp.grid_size = wp.constant(grid_size)
-    wp.c_mu_led = wp.constant(c_mu_led)
-    wp.c_k_led = wp.constant(c_k_led)
-    wp.delta_t_led = wp.constant(delta_t_led)
-    wp.delta_x_led = wp.constant(delta_x_led)
-    wp.c_led = wp.constant(c_led)
+    wp.grid_size = wp.constant(wp.float64(grid_size))
+    wp.c_mu_led = wp.constant(wp.float64(c_mu_led))
+    wp.c_k_led = wp.constant(wp.float64(c_k_led))
+    wp.delta_t_led = wp.constant(wp.float64(delta_t_led))
+    wp.delta_x_led = wp.constant(wp.float64(delta_x_led))
+    wp.c_led = wp.constant(wp.float64(c_led))
 
     print(f"Stability factor: {stability_factor}")
     assert stability_factor < 1, "Unstable!"
@@ -282,7 +283,7 @@ if __name__ == "__main__":
     
 
     compute_backend = ComputeBackend.WARP
-    precision_policy = PrecisionPolicy.FP32FP32
+    precision_policy = PrecisionPolicy.FP64FP64
 
     # Change velocity set to D2Q4
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)

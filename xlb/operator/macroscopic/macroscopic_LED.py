@@ -27,7 +27,7 @@ class Macroscopic_LED(Operator):
         _f_vec = wp.vec(20, dtype=self.compute_dtype)
 
         @wp.func
-        def functional(f: _f_vec, index: wp.vec3i, t: wp.float32):
+        def functional(f: _f_vec, index: wp.vec3i, t: Any):
             # TODO: seems unnecessarily nested
             return zero_moment_func(f, index, t)
 
@@ -35,7 +35,7 @@ class Macroscopic_LED(Operator):
         def kernel(
             f: wp.array4d(dtype=Any),
             U_num_tilde: wp.array4d(dtype=Any),
-            t: wp.float32
+            t: Any
         ):
             i, j, k = wp.tid()
             index = wp.vec3i(i, j, k)
