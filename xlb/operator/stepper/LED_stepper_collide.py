@@ -132,54 +132,75 @@ class LinearElastodynamicsStepperCollide(Stepper):
 
     @Operator.register_backend(ComputeBackend.JAX)
     @partial(jit, static_argnums=(0,))
-    def jax_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep):
+    def jax_implementation(self, f_0, f_1, bc_mask, missing_mask, omega, timestep, u_num_displ_calc):
         """
         Perform a single step of the lattice boltzmann method
         """
-        # Cast to compute precision
-        f_0 = self.precision_policy.cast_to_compute_jax(f_0)  # Untouched
-        f_1 = self.precision_policy.cast_to_compute_jax(f_1)  # Untouched
+        # (1.a) Compute U num tilde
+        U_num_tilde = self.macroscopic_LED(f_0)
+        
+        # (1.b) Time integrate displacement solution
+        u_num_displ_pp = self.displacement_LED(U_num_tilde, u_num_displ_calc)
+        
+        # (1.c) Construct local equilibrium populations
+        f_eq = self.equilibrium_LED(U_num_tilde)
+        
+        # (1.d) Collide
+        f_star = self.collision_LED(f_0, f_eq, 2.)
+        
+        # (2.a) Stream
+        f_streamed = self.stream(f_star)
+        # (2.b) Apply BCs
+        # TODO: Add. Periodic case for now.
+        # (2.c) Prepare time integration of displacement solution.
+        u_num_displ_calc = self.displacement_LED(U_num_tilde, u_num_displ_pp)
 
-        # Apply streaming, base streamer is periodic. TODO: Adjust for Dirichlet BCs.
-        f_post_stream = self.stream_LED(f_0)  # Done
+        return f_0, f_streamed, U_num_tilde, u_num_displ_pp
 
-        # Apply boundary conditions.
-        # Skipped for now, as bc = [] in sinewave_LED_file.
-        for bc in self.boundary_conditions:
-            if bc.implementation_step == ImplementationStep_LED.STREAMING:
-                f_post_stream = bc(
-                    f_0,
-                    f_post_stream,
-                    bc_mask,
-                    missing_mask,
-                )
+        # # Cast to compute precision
+        # f_0 = self.precision_policy.cast_to_compute_jax(f_0)  # Untouched
+        # f_1 = self.precision_policy.cast_to_compute_jax(f_1)  # Untouched
 
-        # Compute the macroscopic variables, ie. the moments.
-        # In LED we only need zeroth-order moment
-        # In LED, we get v_num from U_num_tilde
-        U_num_tilde = self.macroscopic_LED(f_post_stream)  # Done. TODO: add axternal forcing B_tilde
+        # # Apply streaming, base streamer is periodic. TODO: Adjust for Dirichlet BCs.
+        # f_post_stream = self.stream_LED(f_0)  # Done
 
-        # Compute equilibrium
-        feq = self.equilibrium_LED(U_num_tilde)
+        # # Apply boundary conditions.
+        # # Skipped for now, as bc = [] in sinewave_LED_file.
+        # for bc in self.boundary_conditions:
+        #     if bc.implementation_step == ImplementationStep_LED.STREAMING:
+        #         f_post_stream = bc(
+        #             f_0,
+        #             f_post_stream,
+        #             bc_mask,
+        #             missing_mask,
+        #         )
 
-        # Apply collision
-        f_post_collision = self.collision_LED(f_post_stream, feq, U_num_tilde, omega)
+        # # Compute the macroscopic variables, ie. the moments.
+        # # In LED we only need zeroth-order moment
+        # # In LED, we get v_num from U_num_tilde
+        # U_num_tilde = self.macroscopic_LED(f_post_stream)  # Done. TODO: add axternal forcing B_tilde
 
-        # Apply collision type boundary conditions
-        for bc in self.boundary_conditions:
-            f_post_collision = bc.update_bc_auxilary_data(f_post_stream, f_post_collision, bc_mask, missing_mask)
-            if bc.implementation_step == ImplementationStep_LED.COLLISION:
-                f_post_collision = bc(
-                    f_post_stream,
-                    f_post_collision,
-                    bc_mask,
-                    missing_mask,
-                )
+        # # Compute equilibrium
+        # feq = self.equilibrium_LED(U_num_tilde)
 
-        # Copy back to store precision
-        f_1 = self.precision_policy.cast_to_store_jax(f_post_collision)
+        # # Apply collision
+        # f_post_collision = self.collision_LED(f_post_stream, feq, U_num_tilde, omega)
 
-        return f_0, f_1
+        # # Apply collision type boundary conditions
+        # for bc in self.boundary_conditions:
+        #     f_post_collision = bc.update_bc_auxilary_data(f_post_stream, f_post_collision, bc_mask, missing_mask)
+        #     if bc.implementation_step == ImplementationStep_LED.COLLISION:
+        #         f_post_collision = bc(
+        #             f_post_stream,
+        #             f_post_collision,
+        #             bc_mask,
+        #             missing_mask,
+        #         )
+
+        # # Copy back to store precision
+        # f_1 = self.precision_policy.cast_to_store_jax(f_post_collision)
+
+        # return f_0, f_1
 
     def _construct_warp(self):
         # Set local constants

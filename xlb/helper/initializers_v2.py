@@ -1,8 +1,10 @@
 from xlb.compute_backend import ComputeBackend
-from xlb.operator.equilibrium import QuadraticEquilibrium
 from xlb.operator.equilibrium import Equilibrium_LED
 from xlb.operator.operator import Operator
 import warp as wp
+import jax.numpy as jnp
+from jax import jit
+from functools import partial
 
 from typing import Any
 
@@ -27,6 +29,13 @@ def initialize_f_U_num_LED(f, grid, precision_policy, compute_backend):
 class Initializer_LED(Operator):
     def __init__(self, velocity_set=None, precision_policy=None, compute_backend=None):
         super().__init__(velocity_set, precision_policy, compute_backend)
+    
+    @Operator.register_backend(ComputeBackend.JAX)
+    @partial(jit, static_argnums=(0), inline=True)
+    def jax_implementation(self, f):
+        rho = self.zero_moment(f)
+        u = self.first_moment(f, rho)
+        return rho, u
     
     def _construct_warp(self):
         _u_num_displ_vector_vec = wp.vec(2, dtype=self.compute_dtype)

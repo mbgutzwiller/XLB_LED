@@ -17,10 +17,10 @@ class Macroscopic_LED(Operator):
         self.zero_moment_LED = ZeroMoment_LED(*args, **kwargs)
         super().__init__(*args, **kwargs)
 
-    # @Operator.register_backend(ComputeBackend.JAX)
-    # @partial(jit, static_argnums=(0), inline=True)
-    # def jax_implementation(self, f):
-    #     return self.zero_moment_LED(f)
+    @Operator.register_backend(ComputeBackend.JAX)
+    @partial(jit, static_argnums=(0), inline=True)
+    def jax_implementation(self, f):
+        return self.zero_moment_LED(f)
 
     def _construct_warp(self):
         zero_moment_func = self.zero_moment_LED.warp_functional

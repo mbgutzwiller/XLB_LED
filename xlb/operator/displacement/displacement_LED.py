@@ -15,11 +15,10 @@ class Displacement_LED(Operator):
     Half time integration step for displacement solution.
     """
 
-    # @Operator.register_backend(ComputeBackend.JAX)  #  TODO: jax implementation of time integration of displacement solution
-    # @partial(jit, static_argnums=(0,))
-    # def jax_implementation(self, f: jnp.ndarray, feq: jnp.ndarray, omega):
-    #     _omega = self.compute_dtype(omega)
-    #     return _omega * feq + (1 - _omega) * f
+    @Operator.register_backend(ComputeBackend.JAX)  #  TODO: jax implementation of time integration of displacement solution
+    @partial(jit, static_argnums=(0,))
+    def jax_implementation(self, U_num_tilde: jnp.ndarray, u_num_displ: jnp.ndarray):
+        return u_num_displ + U_num_tilde[:2] / 400  #ardcoded for numsteps=200
 
     def _construct_warp(self):
         # Set local constants TODO: This is a hack and should be fixed with warp update
