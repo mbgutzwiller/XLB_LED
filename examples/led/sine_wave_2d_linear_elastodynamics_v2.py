@@ -81,7 +81,6 @@ class SineWave2D_LED:
         )
 
     def run(self, num_steps, post_process_interval=100, show_plot=False):
-        # TODO: initialize U_num_here
         self.stream_LED = Stream_LED(self.velocity_set, self.precision_policy, self.compute_backend)
         initializer = Initializer_LED(velocity_set=self.velocity_set,
                                       precision_policy=self.precision_policy,
@@ -157,7 +156,7 @@ class SineWave2D_LED:
         # save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
         # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
 
-        # Compare solutions on cuts through 2d plane
+        # Compare solutions visually on cuts through 2d plane
         t = np.float64(wp.float64(i) * wp.delta_t_led)  #
         grid_size = self.grid_shape[0]
         plot_index = int(0. * (grid_size-1))
@@ -202,7 +201,7 @@ class SineWave2D_LED:
 
 
         """
-        Approximate error calculation
+        Error calculation
         """
         # Calculation for L2 norm
         u_ex_x = np.array([np.array([self.u_num_exact_x(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
