@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
 from tqdm import tqdm
 
+
 wp.build.clear_kernel_cache()
 plt.ion()
 
@@ -100,21 +101,24 @@ class SineWave2D_LED:
 
         for timestep in tqdm(range(num_steps)):
             # Collision
+            if timestep == 1:
+                stime = time.time()
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
             # Postprocessing: Show plot or calculate error
-            if timestep % post_process_interval == 0 or timestep == num_steps - 1:
+            if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and post_process_interval < num_steps:
                 self.post_process(timestep, show_plot)
             
             # Streaming
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
 
         # Calculation for L2 norm
+        ftime = time.time()
         final_error_norm_u = np.sqrt(self.cumulative_error_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_u = np.sqrt(self.cumulative_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma
+        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, ftime-stime
 
 
     def u_num_exact_x(self, x, y, t):
@@ -174,8 +178,8 @@ class SineWave2D_LED:
             plt.clf()
             plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=y_cut, t=t), label="y = const, u_ex", color="green")
             plt.plot(x_axis_num, self.u_num_exact_y(x=y_cut, y=x_axis_num, t=t), label="x = const, u_ex", color="orange")
-            plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="green")
-            plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="orange")
+            plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle="--", color="blue")
+            plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle="--", color="red")
             # print(f"{u_num_displ[0, :, plot_index_num][0] - u_num_displ[0, :, plot_index_num][-1]}")
             # print(f"{u_num_displ[0, :, plot_index_num][1] - u_num_displ[0, :, plot_index_num][0]}")
             plt.grid()
@@ -183,7 +187,7 @@ class SineWave2D_LED:
             plt.title(f"t = {t:.6f}s, interval {i}")
             plt.legend()
             plt.draw()
-            plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
+            # plt.savefig("/home/merrillg/XLB_LED/examples/led/figures/00_ux_uy_figure", dpi=300)
             # plt.savefig("/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/00_ux_uy_figure", dpi=300)
             plt.pause(1)
 
@@ -249,10 +253,10 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 64  # Number of grid cells along one dimension
+    grid_size = 400  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 200  # Number of collision/streaming steps
-    pp_interval = 1  # Post process interval
+    num_steps = 1000  # Number of collision/streaming steps
+    pp_interval = 100  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
