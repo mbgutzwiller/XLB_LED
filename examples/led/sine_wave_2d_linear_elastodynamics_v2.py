@@ -101,8 +101,9 @@ class SineWave2D_LED:
 
         for timestep in tqdm(range(num_steps)):
             # Collision
-            if timestep == 1:
+            if timestep == 10:
                 stime = time.time()
+                print("collected stime")
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
             # Postprocessing: Show plot or calculate error
@@ -114,6 +115,7 @@ class SineWave2D_LED:
 
         # Calculation for L2 norm
         ftime = time.time()
+        print(ftime - stime)
         final_error_norm_u = np.sqrt(self.cumulative_error_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_u = np.sqrt(self.cumulative_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
@@ -253,10 +255,10 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 400  # Number of grid cells along one dimension
+    grid_size = 100  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
-    num_steps = 1000  # Number of collision/streaming steps
-    pp_interval = 100  # Post process interval
+    num_steps = int(2.5 * grid_size)  # Number of collision/streaming steps
+    pp_interval = num_steps  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
