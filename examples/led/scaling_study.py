@@ -1,5 +1,5 @@
 import os
-# os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes it wont automatically run on cpu if no gpu is available.
+os.environ["JAX_PLATFORMS"] = "cpu"  # Sometimes it wont automatically run on cpu if no gpu is available.
 
 
 import warp as wp
@@ -13,9 +13,9 @@ from xlb.precision_policy import PrecisionPolicy
 from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
 # wp.build.clear_kernel_cache()
 
-from pynvml import *
-nvmlInit()
-handle = nvmlDeviceGetHandleByIndex(0)
+# from pynvml import *
+# nvmlInit()
+# handle = nvmlDeviceGetHandleByIndex(0)
 
 
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
 
-    grid_sizes = [50, 100, 200, 400, 800, 1600, 3200, 4000]
+    grid_sizes = [50, 100, 200, 400]#, 800, 1600, 3200, 4000]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     for c_k_led, c_mu_led in zip(c_k, c_mu):
         compute_backend = ComputeBackend.WARP
@@ -75,25 +75,25 @@ if __name__ == "__main__":
             wp.build.clear_kernel_cache()
             error_u, error_sigma, linf_error_u, linf_error_sigma, runtime = simulation.run(num_steps=num_steps, post_process_interval=num_steps)
             # Get GPU utilization
-            utilization = nvmlDeviceGetUtilizationRates(handle)
-            mem_info = nvmlDeviceGetMemoryInfo(handle)
-            power = nvmlDeviceGetPowerUsage(handle) / 1000  # in watts
-            power_limit = nvmlDeviceGetEnforcedPowerLimit(handle) / 1000  # in watts
-            # Get memory usage
-            vram_used = mem_info.used / (1024 ** 2)   # in MB
-            vram_total = mem_info.total / (1024 ** 2) # in MB
+            # utilization = nvmlDeviceGetUtilizationRates(handle)
+            # mem_info = nvmlDeviceGetMemoryInfo(handle)
+            # power = nvmlDeviceGetPowerUsage(handle) / 1000  # in watts
+            # power_limit = nvmlDeviceGetEnforcedPowerLimit(handle) / 1000  # in watts
+            # # Get memory usage
+            # vram_used = mem_info.used / (1024 ** 2)   # in MB
+            # vram_total = mem_info.total / (1024 ** 2) # in MB
 
-            # Get utilization rates
-            gpu_util = utilization.gpu  # in percent
-            mem_util = utilization.memory  # in percent
+            # # Get utilization rates
+            # gpu_util = utilization.gpu  # in percent
+            # mem_util = utilization.memory  # in percent
 
-            # Print results
-            print(f"runtime {runtime}")
-            print(f"grid size {grid_size}")
-            print(f"GPU Utilization     : {gpu_util}%")
-            print(f"Memory Utilization  : {mem_util}%")
-            print(f"Power Usage         : {power} W (Limit: {power_limit} W)")
-            print(f"VRAM Usage          : {vram_used:.1f} MB / {vram_total:.1f} MB")
+            # # Print results
+            # print(f"runtime {runtime}")
+            # print(f"grid size {grid_size}")
+            # print(f"GPU Utilization     : {gpu_util}%")
+            # print(f"Memory Utilization  : {mem_util}%")
+            # print(f"Power Usage         : {power} W (Limit: {power_limit} W)")
+            # print(f"VRAM Usage          : {vram_used:.1f} MB / {vram_total:.1f} MB")
             
             print(f"grid size {grid_size} fits on gpu")
             print(np.float32(wp.c_k_led)**2)
@@ -117,7 +117,16 @@ if __name__ == "__main__":
             axs1.loglog(grid_size_run, C_loglog_3 * np.array(grid_size_run)**3, "--", label="Slope = 3", alpha=0.5, color="black")
             axs1.loglog(grid_size_run, C_loglog_4 * np.array(grid_size_run)**4, "-.", label="Slope = 4", alpha=0.5, color="black")
             axs1.legend()
-            plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/scaling_ck_{int(np.round(c_k_led**2, 1)*10)}_134")
+
+            # Save plot using absolute path
+            # Get path to current script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # Full path to 'figures/' folder next to this script
+            figures_dir = os.path.join(script_dir, "figures")
+            os.makedirs(figures_dir, exist_ok=True)
+            plt.savefig(os.path.join(figures_dir, f"scaling_ck_{int(np.round(c_k_led**2, 1)*10)}_134_test"))
+            # plt.savefig(f"figures/scaling_ck_{int(np.round(c_k_led**2, 1)*10)}_134_test")
             # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
             plt.show(block=False)
 
