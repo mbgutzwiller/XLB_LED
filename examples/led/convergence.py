@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
         velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-        grid_sizes = [40, 80, 120, 160, 240, 320]
+        grid_sizes = [10, 20, 40, 80, 120, 160, 240, 320]
         num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
         l2_errors_u = []
@@ -80,8 +80,8 @@ if __name__ == "__main__":
             axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs1[1].legend()
             fig1.suptitle("Approximate L2 Error of Displacement and Stress")
-            plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_0bound_dirBC_u_sig_L2_ck_{int(np.round(c_k_led, 1)*10)}_40_320_cpu")
-            # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_16_2_n_5")
+            # plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_0bound_dirBC_u_sig_L2_ck_{int(np.round(c_k_led, 1)*10)}_40_320_cpu")
+            plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_0bound_dirBC_u_sig_L2_ck_{int(np.round(c_k_led, 1)*10)}_{grid_sizes[0]}_{grid_sizes[-1]}_gpu")
             plt.show(block=False)
 
             # Plotting L2 errors
@@ -103,8 +103,8 @@ if __name__ == "__main__":
             axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs2[1].legend()
             fig2.suptitle("Approximate LINF Error of Displacement and Stress")
-            plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_40_320_cpu")
-            # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_16_2_n_5")
+            # plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_40_320_cpu")
+            plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_{grid_sizes[0]}_{grid_sizes[-1]}_gpu")
             plt.show(block=False)
         print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
     print("Finished all runs.")
