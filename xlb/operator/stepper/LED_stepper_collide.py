@@ -15,6 +15,7 @@ from xlb.operator.boundary_condition.boundary_condition_registry import boundary
 from xlb.operator.boundary_masker import IndicesBoundaryMasker, MeshBoundaryMasker
 from xlb.helper import check_bc_overlaps
 from xlb.helper.LED_solver_v2 import create_LED_fields
+from xlb.helper.initializers_v2 import initialize_f_U_num_LED
 
 
 class LinearElastodynamicsStepperCollide(Stepper):
@@ -58,8 +59,6 @@ class LinearElastodynamicsStepperCollide(Stepper):
         _, f_0, f_1, f_temp, missing_mask, bc_mask = create_LED_fields(
             grid=self.grid, compute_backend=self.compute_backend, precision_policy=self.precision_policy
         )
-
-        from xlb.helper.initializers_v2 import initialize_f_U_num_LED  # TODO: initialze eq for LED
 
         f_0 , U_0, u_num_displ_0, u_num_displ_1 = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
 
