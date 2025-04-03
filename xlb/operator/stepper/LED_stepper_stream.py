@@ -174,16 +174,16 @@ class LinearElastodynamicsStepperStream(Stepper):
             _uxy_thread = _uxy_vec()
             _U_num_tilde_thread = _U_num_tilde_vec()
             _missing_mask = _missing_mask_vec()
-            for l in range(self.velocity_set.q * 5):
+            for l in range(20):
                 # q-sized vector of pre-streaming populations
                 _f0_thread[l] = self.compute_dtype(f0_buffer[l, index[0], index[1], index[2]])
                 _f1_thread[l] = self.compute_dtype(f1_buffer[l, index[0], index[1], index[2]])
-            for l in range(self.velocity_set.q):
+            for l in range(4):
                 if missing_mask[l, index[0], index[1], index[2]]:
                     _missing_mask[l] = wp.uint8(1)
                 else:
                     _missing_mask[l] = wp.uint8(0)
-            for l in range(self.velocity_set.d):
+            for l in range(2):
                 _uxy_thread[l] = self.compute_dtype(uxy_buffer[l, index[0], index[1], index[2]])
             for l in range(5):
                 _U_num_tilde_thread[l] = self.compute_dtype(U_num_tilde_buffer[l, index[0], index[1], index[2]])
@@ -222,10 +222,10 @@ class LinearElastodynamicsStepperStream(Stepper):
             # 2.c) prepare displacement solution.
             _u_num_displ = self.displacement_LED.warp_functional(_U_num_tilde_thread, _uxy_thread)
             
-            for l in range(self.velocity_set.q * 5):
+            for l in range(20):
                 f_1[l, index[0], index[1], index[2]] = self.store_dtype(_f_post_stream[l])
 
-            for l in range(self.velocity_set.d):
+            for l in range(2):
                 u_num_displ_1[l, index[0], index[1], index[2]] = self.store_dtype(_u_num_displ[l])
             
         return None, kernel
