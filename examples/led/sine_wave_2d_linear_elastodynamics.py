@@ -249,10 +249,10 @@ class SineWave2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 160  # Number of grid cells along one dimension
+    grid_size = 400  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = int(2.5 * grid_size)  # Number of collision/streaming steps
-    pp_interval = int(grid_size/13)  # Post process interval
+    pp_interval = int(num_steps+1)  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time

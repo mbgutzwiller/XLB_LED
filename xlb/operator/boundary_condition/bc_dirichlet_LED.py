@@ -48,17 +48,6 @@ class DirichletBC_LED(BoundaryCondition_LED):
         # TODO: maybe..?
         self.needs_padding = True
 
-    # @Operator.register_backend(ComputeBackend.JAX)  # TODO: jax implementation of dirichlet BC
-    # @partial(jit, static_argnums=(0))
-    # def jax_implementation(self, f_pre, f_post, bc_mask, missing_mask):
-    #     boundary = bc_mask == self.id
-    #     new_shape = (self.velocity_set.q,) + boundary.shape[1:]
-    #     boundary = lax.broadcast_in_dim(boundary, new_shape, tuple(range(self.velocity_set.d + 1)))
-    #     return jnp.where(
-    #         jnp.logical_and(missing_mask, boundary),
-    #         f_pre[self.velocity_set.opp_indices],
-    #         f_post,
-    #     )
 
     def _construct_warp(self):
         # Set local constants
@@ -100,7 +89,7 @@ class DirichletBC_LED(BoundaryCondition_LED):
                         _f[l * 5 + m] = f_pre[_opp_indices[l] * 5 + m]
             
             # for i, j in zip(_vel_c[0], _vel_c[1]):
-            # TODO: make this more efficient, maybe use c from velocity set and access directions with index, define boundary prior.
+            # TODO: make this more efficient/cleaner, maybe use c from velocity set and access directions with index, define boundary prior.
             for l in range(4):
                 if missing_mask[l] == wp.uint8(1):
                     if l == 0:
