@@ -113,13 +113,14 @@ if __name__ == "__main__":
             C_loglog_1 = runtimes[0] / (grid_size_run[0])  # reference line for 2nd order convergence
             fig1, axs1 = plt.subplots(1, 1, figsize = (10, 5))
             axs1.loglog(grid_size_run, runtimes, marker="o", markersize=8, color="black", label="Runtime")
-            axs1.set_xlabel("Grid size")
+            axs1.set_xlabel("Grid size [-]")
             axs1.set_ylabel("Runtime [s]")
             axs1.grid(True, which="both")
             axs1.loglog(grid_size_run, C_loglog_1 * np.array(grid_size_run), ":", label="Slope = 1", alpha=0.5, color="black")
             axs1.loglog(grid_size_run, C_loglog_3 * np.array(grid_size_run)**3, "--", label="Slope = 3", alpha=0.5, color="black")
             axs1.loglog(grid_size_run, C_loglog_4 * np.array(grid_size_run)**4, "-.", label="Slope = 4", alpha=0.5, color="black")
-            axs1.set_ylim(0.5 * np.min(runtimes), 1.5*np.max(runtimes))
+            axs1.set_ylim(0.5 * np.min(runtimes), 2*np.max(runtimes))
+            fig1.suptitle(f"Runtime vs. Problem Size")
             axs1.legend()
 
             # Save plot using absolute path
