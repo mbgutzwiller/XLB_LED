@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
         velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-        grid_sizes = [10, 20, 40, 80, 120, 160, 240, 320]
+        grid_sizes = [10, 20, 40, 80, 120, 160, 240, 320, 640]
         num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
         l2_errors_u = []
