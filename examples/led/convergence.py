@@ -8,7 +8,7 @@ from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 import warp as wp
 
-from examples.led.sine_wave_2d_linear_elastodynamics import SineWave2D_LED
+from examples.led.pulse_2d_linear_elastodynamics import Pulse2D_LED
 
 
 # To save figures when on remote desktop using ssh which makes
@@ -44,7 +44,7 @@ if __name__ == "__main__":
             import xlb
             from xlb.compute_backend import ComputeBackend
             from xlb.precision_policy import PrecisionPolicy
-            from examples.led.sine_wave_2d_linear_elastodynamics import SineWave2D_LED
+            from examples.led.pulse_2d_linear_elastodynamics import Pulse2D_LED
             wp.build.clear_kernel_cache()
             print(f"Starting run {i + 1} of {len(grid_sizes)}")
             grid_shape = (grid_size, grid_size)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             wp.grid_size = wp.constant(float(grid_size))
 
             print("Compiling...")
-            simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
+            simulation = Pulse2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
             print("... has finished.")
             n_pp_steps = np.array([20, 5])
             pp_intervals = num_steps / n_pp_steps

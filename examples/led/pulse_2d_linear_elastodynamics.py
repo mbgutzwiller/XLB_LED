@@ -18,7 +18,7 @@ from tqdm import tqdm
 import os
 
 
-class SineWave2D_LED:
+class Pulse2D_LED:
     def __init__(self, grid_shape, velocity_set, compute_backend, precision_policy):
         xlb.init(
             velocity_set=velocity_set,
@@ -107,6 +107,8 @@ class SineWave2D_LED:
 
             # Postprocessing, happens only if post_process_interval is smaller than num_steps.
             #  -> set pp interval > numsteps for performance analysis.
+            if timestep == 2:
+                stime = time.time()
             if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and (num_steps > post_process_interval):
                 wp.synchronize()
                 wp.synchronize_device()
@@ -123,12 +125,12 @@ class SineWave2D_LED:
             final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
 
             try:
-                return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/(final_norm_u * (post_process_interval**0.5)), self.max_error_sigma/(final_norm_sigma * (post_process_interval**0.5))
+                return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/(final_norm_u * (post_process_interval**0.5)), self.max_error_sigma/(final_norm_sigma * (post_process_interval**0.5)), time.time() - stime
             except:
                 # in case no manufactured solution is available for error calculation.
-                return None, None, None, None
+                return None, None, None, None, time.time() - stime
         else:
-            return None, None, None, None
+            return None, None, None, None, time.time() - stime
 
 
 
@@ -285,7 +287,7 @@ if __name__ == "__main__":
     velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
     stime = time.time()
-    simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
+    simulation = Pulse2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
     simulation.run(num_steps=num_steps, post_process_interval=pp_interval, show_plot=False)
     print(f"took {time.time() - stime:.2} seconds")
 
