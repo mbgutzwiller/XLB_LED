@@ -57,10 +57,9 @@ class DirichletBC_LED(BoundaryCondition_LED):
         @wp.func
         def dudt_tilde_func(x: wp.float32, y: wp.float32, t: wp.float32):
             _dudt_D_tilde = _dudt_D_tilde_vector_vec(0.)
-            _dudt_D_tilde[0] = 4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t - 1./10.))
-            _dudt_D_tilde[1] = 4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t + 3./10.))
-            # _dudt_D_tilde[0] = 1.6*wp.pi*wp.sin(wp.pi*(-1.6*t + 2.0*y))*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.sin(wp.pi*(4.0*t - 0.4)) + 4.0*wp.pi*wp.sin(wp.pi*(-1.2*t + 4.0*x))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(4.0*t - 0.4)) - 1.2*wp.pi*wp.sin(wp.pi*(4.0*t - 0.4))*wp.cos(wp.pi*(-1.6*t + 2.0*y))*wp.cos(wp.pi*(-1.2*t + 4.0*x))
-            # _dudt_D_tilde[1] = 2.8*wp.pi*wp.sin(wp.pi*(-2.8*t + 4.0*x))*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6)) - 4.0*wp.pi*wp.sin(wp.pi*(-0.2*t + 2.0*y))*wp.sin(wp.pi*(4.0*t + 1.6))*wp.cos(wp.pi*(-2.8*t + 4.0*x)) - 0.2*wp.pi*wp.cos(wp.pi*(-2.8*t + 4.0*x))*wp.cos(wp.pi*(-0.2*t + 2.0*y))*wp.cos(wp.pi*(4.0*t + 1.6))
+            # 0 BC for hard reflection.
+            _dudt_D_tilde[0] = 0. #4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t - 1./10.))
+            _dudt_D_tilde[1] = 0. #4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t + 3./10.))
             return _dudt_D_tilde
         
         # Construct the functional for this BC

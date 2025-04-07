@@ -122,7 +122,11 @@ class SineWave2D_LED:
             final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
             final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
 
-            return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/(final_norm_u * (post_process_interval**0.5)), self.max_error_sigma/(final_norm_sigma * (post_process_interval**0.5))
+            try:
+                return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/(final_norm_u * (post_process_interval**0.5)), self.max_error_sigma/(final_norm_sigma * (post_process_interval**0.5))
+            except:
+                # in case no manufactured solution is available for error calculation.
+                return None, None, None, None
         else:
             return None, None, None, None
 
@@ -163,102 +167,102 @@ class SineWave2D_LED:
             U_num_tilde = wp.to_jax(self.U_num_tilde)[..., 0]
             u_num_displ = wp.to_jax(self.u_num_displ_1)[..., 0]
 
-        # # For postprocessing e.g. in paraview
-        # fields = {"u_x": u_num_displ[0],
-        #           "u_y": u_num_displ[1],
-        #           "abs_u": np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])),
-        #           "sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
-        #           "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
-        #           "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
-        # save_fields_vtk(fields, timestep=i, prefix="2d_sine_wave")
-        # save_image(fields["sigma_xx"], timestep=i, prefix="2d_sine_wave")
+        # For postprocessing e.g. in paraview
+        fields = {"u_x": u_num_displ[0],
+                  "u_y": u_num_displ[1],
+                  "abs_u": np.sqrt(np.square(u_num_displ[0]) + np.square(u_num_displ[1])),
+                  "sigma_xx": -(wp.c_k_led * U_num_tilde[2] + wp.c_mu_led * U_num_tilde[3]),
+                  "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
+                  "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
+        save_fields_vtk(fields, timestep=i, prefix="results/pulse")
+        # save_image(fields["sigma_xx"], timestep=i, prefix="results/pulse")
 
-        # Compare solutions on cuts through 2d plane
-        t = np.float32(i * wp.delta_t_led)
-        grid_size = self.grid_shape[0]
-        plot_index = int(0.57 * (grid_size-1))  # set relative cut position here
-        assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting position/index invalid"
-        plot_index_num = plot_index
-        domain_size = 1
-        delta_x = domain_size/grid_size
-        cut_position = delta_x * (plot_index + 0.5)
-        x_axis_num = np.linspace(delta_x/2, domain_size-delta_x/2, num=grid_size)
+        # # Compare solutions on cuts through 2d plane
+        # t = np.float32(i * wp.delta_t_led)
+        # grid_size = self.grid_shape[0]
+        # plot_index = int(0.57 * (grid_size-1))  # set relative cut position here
+        # assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting position/index invalid"
+        # plot_index_num = plot_index
+        # domain_size = 1
+        # delta_x = domain_size/grid_size
+        # cut_position = delta_x * (plot_index + 0.5)
+        # x_axis_num = np.linspace(delta_x/2, domain_size-delta_x/2, num=grid_size)
 
-        if show_plot:
-            plt.clf()
-            plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=cut_position, t=t), label="y = const, u_ex_x", color="blue")
-            plt.plot(x_axis_num, self.u_num_exact_y(x=cut_position, y=x_axis_num, t=t), label="x = const, u_ex_y", color="green")
-            plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle=":", color="red")
-            plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle=":", color="orange")
-            plt.grid()
-            plt.ylim(-1, 1)
-            plt.title(f"t = {t:.6f}s, interval {i}")
-            plt.legend()
-            plt.draw()
-            plt.savefig(f"{figures_dir}/00_ux_uy_figure", dpi=300)
-            plt.pause(1)
+        # if show_plot:
+        #     plt.clf()
+        #     plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=cut_position, t=t), label="y = const, u_ex_x", color="blue")
+        #     plt.plot(x_axis_num, self.u_num_exact_y(x=cut_position, y=x_axis_num, t=t), label="x = const, u_ex_y", color="green")
+        #     plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle=":", color="red")
+        #     plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle=":", color="orange")
+        #     plt.grid()
+        #     plt.ylim(-1, 1)
+        #     plt.title(f"t = {t:.6f}s, interval {i}")
+        #     plt.legend()
+        #     plt.draw()
+        #     plt.savefig(f"{figures_dir}/00_ux_uy_figure", dpi=300)
+        #     plt.pause(1)
 
 
-        """
-        Approximate error calculation
-        """
-        # Calculation for L2 norm
-        u_ex_x = np.array([np.array([self.u_num_exact_x(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        u_ex_y = np.array([np.array([self.u_num_exact_y(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        # """
+        # Approximate error calculation
+        # """
+        # # Calculation for L2 norm
+        # u_ex_x = np.array([np.array([self.u_num_exact_x(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        # u_ex_y = np.array([np.array([self.u_num_exact_y(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
 
-        u_num_x = u_num_displ[0, :, :]
-        u_num_y = u_num_displ[1, :, :]
+        # u_num_x = u_num_displ[0, :, :]
+        # u_num_y = u_num_displ[1, :, :]
 
-        # norm_error_u = np.linalg.norm(np.stack([(u_ex_x - u_num_x), (u_ex_y - u_num_y)], axis=0))
-        norm_error_u = np.sum((u_ex_x - u_num_x) ** 2 + (u_ex_y - u_num_y) ** 2)
-        max_error_u = np.max(np.abs(np.stack([u_ex_x - u_num_x,
-                                              u_ex_y - u_num_y,
-                                              ], axis=0)))
-        # norm_u = np.linalg.norm(np.stack([u_ex_x, u_ex_y], axis=0))
-        norm_u = np.sum((u_ex_x) ** 2 + (u_ex_y) ** 2)
+        # # norm_error_u = np.linalg.norm(np.stack([(u_ex_x - u_num_x), (u_ex_y - u_num_y)], axis=0))
+        # norm_error_u = np.sum((u_ex_x - u_num_x) ** 2 + (u_ex_y - u_num_y) ** 2)
+        # max_error_u = np.max(np.abs(np.stack([u_ex_x - u_num_x,
+        #                                       u_ex_y - u_num_y,
+        #                                       ], axis=0)))
+        # # norm_u = np.linalg.norm(np.stack([u_ex_x, u_ex_y], axis=0))
+        # norm_u = np.sum((u_ex_x) ** 2 + (u_ex_y) ** 2)
 
-        self.cumulative_error_u += norm_error_u
-        self.cumulative_u += norm_u
-        if max_error_u > self.max_error_u:
-            self.max_error_u = max_error_u
+        # self.cumulative_error_u += norm_error_u
+        # self.cumulative_u += norm_u
+        # if max_error_u > self.max_error_u:
+        #     self.max_error_u = max_error_u
 
-        _U_js_ex = np.array([np.array([self.U_js(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        _U_jd_ex = np.array([np.array([self.U_jd(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        _U_jxy_ex = np.array([np.array([self.U_jxy(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        # _U_js_ex = np.array([np.array([self.U_js(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        # _U_jd_ex = np.array([np.array([self.U_jd(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
+        # _U_jxy_ex = np.array([np.array([self.U_jxy(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
 
-        sigma_xx_ex = -(wp.c_k_led ** 0.5 * _U_js_ex + wp.c_mu_led ** 0.5 * _U_jd_ex)
-        sigma_yy_ex = -(wp.c_k_led ** 0.5 * _U_js_ex - wp.c_mu_led ** 0.5 * _U_jd_ex)
-        sigma_xy_ex = -(wp.c_mu_led ** 0.5 * _U_jxy_ex)
+        # sigma_xx_ex = -(wp.c_k_led ** 0.5 * _U_js_ex + wp.c_mu_led ** 0.5 * _U_jd_ex)
+        # sigma_yy_ex = -(wp.c_k_led ** 0.5 * _U_js_ex - wp.c_mu_led ** 0.5 * _U_jd_ex)
+        # sigma_xy_ex = -(wp.c_mu_led ** 0.5 * _U_jxy_ex)
 
-        sigma_xx_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] + wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
-        sigma_yy_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] - wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
-        sigma_xy_num = -(wp.c_mu_led ** 0.5 * U_num_tilde[4, :, :])
+        # sigma_xx_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] + wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
+        # sigma_yy_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] - wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
+        # sigma_xy_num = -(wp.c_mu_led ** 0.5 * U_num_tilde[4, :, :])
 
-        norm_error_sigma = np.sum((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2)
-        norm_sigma = np.sum((sigma_xx_ex) ** 2 + (sigma_yy_ex) ** 2 + (sigma_xy_ex) ** 2)
-        max_error_sigma = np.max(np.abs(np.stack([sigma_xx_ex - sigma_xx_num,
-                                                  sigma_yy_ex - sigma_yy_num,
-                                                  sigma_xy_ex - sigma_xy_num
-                                                  ], axis=0)))
+        # norm_error_sigma = np.sum((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2)
+        # norm_sigma = np.sum((sigma_xx_ex) ** 2 + (sigma_yy_ex) ** 2 + (sigma_xy_ex) ** 2)
+        # max_error_sigma = np.max(np.abs(np.stack([sigma_xx_ex - sigma_xx_num,
+        #                                           sigma_yy_ex - sigma_yy_num,
+        #                                           sigma_xy_ex - sigma_xy_num
+        #                                           ], axis=0)))
                 
-        self.cumulative_error_sigma += norm_error_sigma
-        self.cumulative_sigma += norm_sigma
-        if max_error_sigma > self.max_error_sigma:
-            self.max_error_sigma = max_error_sigma
+        # self.cumulative_error_sigma += norm_error_sigma
+        # self.cumulative_sigma += norm_sigma
+        # if max_error_sigma > self.max_error_sigma:
+        #     self.max_error_sigma = max_error_sigma
 
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 400  # Number of grid cells along one dimension
+    grid_size = 200  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = int(2.5 * grid_size)  # Number of collision/streaming steps
-    pp_interval = int(num_steps+1)  # Post process interval
+    pp_interval = int(1)  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
     delta_t_led = total_time/num_steps
     c_led = delta_x_led/delta_t_led
-    c_k_led = 0.8  # Like in Fig.4 on page 17 from the paper.
+    c_k_led = 0.8  
     c_mu_led = 0.7
     stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
 
@@ -269,6 +273,8 @@ if __name__ == "__main__":
     wp.delta_t_led = wp.constant(delta_t_led)
     wp.delta_x_led = wp.constant(delta_x_led)
     wp.c_led = wp.constant(c_led)
+    # Setting sharpness of pulse:
+    wp.S_pulse = wp.constant(5e-3)
 
     print(f"Stability factor: {stability_factor}")
     assert stability_factor < 1, "Unstable!"
@@ -280,6 +286,6 @@ if __name__ == "__main__":
 
     stime = time.time()
     simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-    simulation.run(num_steps=num_steps, post_process_interval=pp_interval, show_plot=True)
+    simulation.run(num_steps=num_steps, post_process_interval=pp_interval, show_plot=False)
     print(f"took {time.time() - stime:.2} seconds")
 

@@ -46,6 +46,7 @@ def test_macroscopic_warp(dim, velocity_set, grid_shape, U_num_tilde):
     # u_calc = my_grid.create_field(cardinality=dim)
 
     U_num_tilde_calc = compute_macro(f_eq, U_num_tilde_calc)
+    # U_num_tilde_calc = compute_macro(f_eq, U_num_tilde_calc, 0)    
     
     assert np.allclose(U_num_tilde_calc.numpy(), np.array([0, 0, 0, 0, 0])), f"Computed U_num_tilde should be close to initialized U_num_tilde {np.array([0, 0, 0, 0, 0])} but is {U_num_tilde_calc.numpy()}"
     # assert np.allclose(u_calc.numpy(), velocity), f"Computed velocity should be close to initialized velocity {velocity}"

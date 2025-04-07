@@ -14,8 +14,6 @@ from xlb.operator.boundary_condition.boundary_condition_LED import Implementatio
 from xlb.operator.boundary_condition.boundary_condition_registry import boundary_condition_registry
 from xlb.operator.boundary_masker import IndicesBoundaryMasker, MeshBoundaryMasker
 from xlb.helper import check_bc_overlaps
-from xlb.helper.LED_solver_v2 import create_LED_fields
-from xlb.helper.initializers import initialize_f_U_num_LED
 
 
 class LinearElastodynamicsStepperStream(Stepper):
@@ -39,42 +37,7 @@ class LinearElastodynamicsStepperStream(Stepper):
         self.macroscopic_LED = Macroscopic_LED(self.velocity_set, self.precision_policy, self.compute_backend)
         self.displacement_LED = Displacement_LED((self.velocity_set, self.precision_policy, self.compute_backend))
 
-    def prepare_fields(self):
-        """Prepare the fields required for the stepper.
-
-        Args:
-            initializer: Optional operator to initialize the distribution functions.
-                        If provided, it should be a callable that takes (grid, velocity_set,
-                        precision_policy, compute_backend) as arguments and returns initialized f_0.
-                        If None, default equilibrium initialization is used with rho=1 and u=0.
-
-        Returns:
-            Tuple of (f_0, f_1, bc_mask, missing_mask):
-                - f_0: Initial distribution functions
-                - f_1: Copy of f_0 for double-buffering
-                - bc_mask: Boundary condition mask indicating which BC applies to each node
-                - missing_mask: Mask indicating which populations are missing at boundary nodes
-        """
-        # Create fields using the helper function
-        _, f_0, f_1, missing_mask, bc_mask = create_LED_fields(
-            grid=self.grid, compute_backend=self.compute_backend, precision_policy=self.precision_policy
-        )
-
-        f_0 , U_0, U_1, u_num_displ_0, u_num_displ_1 = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
-
-        # Copy f_0 using backend-specific copy to f_1
-        if self.compute_backend == ComputeBackend.JAX:
-            f_1 = f_0.copy()
-        else:
-            wp.copy(f_1, f_0)
-
-        # Process boundary conditions and update masks
-        bc_mask, missing_mask = self._process_boundary_conditions(self.boundary_conditions, bc_mask, missing_mask)
-        # Initialize auxiliary data if needed
-        f_0, f_1 = self._initialize_auxiliary_data(self.boundary_conditions, f_0, f_1, bc_mask, missing_mask)
-
-        return f_0, f_1, bc_mask, missing_mask, U_0, U_1, u_num_displ_0, u_num_displ_1
-
+    
     @classmethod
     def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):  # TODO: initialize the BCs, maybe OK
         """Process boundary conditions and update boundary masks."""
