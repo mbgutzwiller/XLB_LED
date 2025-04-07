@@ -123,7 +123,9 @@ if __name__ == "__main__":
                 plt.savefig(f"{figures_dir}/f_0bound_dirBC_u_sig_LINF_ck_ppinterval_test_N_pp_{n_pp_steps[0]}_{n_pp_steps[1]}")
                 plt.show(block=False)
         print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
+        print(f"l2 errors sigma{l2_errors_sigma}")
     print("Finished all runs.")
+    
 
 
 
