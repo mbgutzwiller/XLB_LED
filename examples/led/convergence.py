@@ -7,7 +7,7 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
-
+import os
 
 
 if __name__ == "__main__":
@@ -63,6 +63,8 @@ if __name__ == "__main__":
             linf_errors_u.append(linf_error_u)
             linf_errors_sigma.append(linf_error_sigma)
             delta_xs.append(delta_x_led)
+            figures_dir = os.path.join(script_dir, "figures_final")
+            os.makedirs(figures_dir, exist_ok=True)
 
             # Plotting L2 errors
             C_u = l2_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
@@ -81,8 +83,7 @@ if __name__ == "__main__":
             axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs1[1].legend()
             fig1.suptitle("Approximate L2 Error of Displacement and Stress")
-            # plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_0bound_dirBC_u_sig_L2_ck_{int(np.round(c_k_led, 1)*10)}_40_320_cpu")
-            plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_0bound_dirBC_u_sig_L2_ck_{int(np.round(c_k_led, 1)*10)}_{grid_sizes[0]}_{grid_sizes[-1]}_gpu_5")
+            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led**2, 1)*10)}_"))
             plt.show(block=False)
 
             # Plotting L2 errors
@@ -104,8 +105,7 @@ if __name__ == "__main__":
             axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs2[1].legend()
             fig2.suptitle("Approximate LINF Error of Displacement and Stress")
-            # plt.savefig(f"/home/merrill/Documents/ETH/LBM for Linear Elastodynamics/Code/xlb/XLB/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_40_320_cpu")
-            plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_0bound_dirBC_u_sig_LINF_ck_{int(np.round(c_k_led, 1)*10)}_{grid_sizes[0]}_{grid_sizes[-1]}_gpu_5")
+            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led**2, 1)*10)}_"))
             plt.show(block=False)
         print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
     print("Finished all runs.")
