@@ -14,8 +14,8 @@ if __name__ == "__main__":
     _run_id = int(time.time())
     domain_size = 1
     total_time = 1
-    c_k = np.array([0.8])
-    c_mu = np.array([0.7])
+    c_k = np.array([1.4])
+    c_mu = np.array([0.1])
     for c_k_led, c_mu_led in zip(c_k, c_mu):
         compute_backend = ComputeBackend.WARP
         precision_policy = PrecisionPolicy.FP32FP32
