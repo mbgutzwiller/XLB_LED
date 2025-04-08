@@ -1,3 +1,7 @@
+import time
+stime_glob = time.time()
+ftime_glob = time.time()
+
 import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
@@ -10,7 +14,7 @@ import xlb.velocity_set
 import warp as wp
 import jax.numpy as jnp
 import numpy as np
-import time
+# import time
 from xlb.helper.initializers_v2 import Initializer_LED
 import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
@@ -77,17 +81,7 @@ class Pulse2D_LED:
         initializer = Initializer_LED(velocity_set=self.velocity_set,
                                       precision_policy=self.precision_policy,
                                       compute_backend=self.compute_backend)
-        # plt.figure()
         self.f_0, self.U_num_tilde, self.u_num_displ_0 = initializer(self.f_0, self.U_num_tilde, self.u_num_displ_0)
-
-        # Initialize error calculation over whole run
-        self.cumulative_error_u = 0
-        self.cumulative_u = 0
-        self.cumulative_error_sigma = 0
-        self.cumulative_sigma = 0
-
-        self.max_error_u = 0
-        self.max_error_sigma = 0
 
         if show_plot:
             # To save figures when working on remote desktop using ssh which makes
@@ -101,13 +95,15 @@ class Pulse2D_LED:
 
         wp.synchronize()
         wp.synchronize_device()
+        ftime_glob = time.time()
+        print(ftime_glob - stime_glob)
         for timestep in tqdm(range(num_steps)):
             # Collision
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
             # Postprocessing, happens only if post_process_interval is smaller than num_steps.
             #  -> set pp interval > numsteps for performance analysis.
-            if timestep == 2:
+            if timestep == 2:  # make sure all compilation has finished.
                 stime = time.time()
             if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and (num_steps > post_process_interval):
                 wp.synchronize()
@@ -117,50 +113,8 @@ class Pulse2D_LED:
             # Streaming
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
 
-        if post_process_interval < num_steps:  # probably only accurate for small post_process_intervals
-            # Final calculation for relative L2 and LINF error like in paper by Oliver.
-            final_error_norm_u = np.sqrt(self.cumulative_error_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-            final_norm_u = np.sqrt(self.cumulative_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-            final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-            final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
+        return time.time() - stime
 
-            try:
-                return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/(final_norm_u * (post_process_interval**0.5)), self.max_error_sigma/(final_norm_sigma * (post_process_interval**0.5)), time.time() - stime
-            except:
-                # in case no manufactured solution is available for error calculation.
-                return None, None, None, None, time.time() - stime
-        else:
-            return None, None, None, None, time.time() - stime
-
-
-
-    def u_num_exact_x(self, x, y, t):
-        return np.sin(4.*np.pi*x) * np.sin(2.*np.pi*y) * np.sin(4.*np.pi*(t-0.1))
-        # return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
-    
-    def u_num_exact_y(self, x, y, t):
-        return np.sin(4.*np.pi*x) * np.sin(2.*np.pi*y) * np.sin(4.*np.pi*(t+0.3))
-        # return np.cos(4.*np.pi*(x-0.7*t)) * np.sin(2.*np.pi*(y-0.1*t)) * np.cos(4.*np.pi*(t+0.4))
-    
-    def U_vx(self, x, y, t):
-        return 4.*np.pi*np.sin(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.cos(4.*np.pi*(t - 1./10.))
-        # return 1.6*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4)) + 4.0*np.pi*np.sin(np.pi*(-1.2*t + 4.0*x))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(4.0*t - 0.4)) - 1.2*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))
-    
-    def U_vy(self, x, y, t):
-        return 4.*np.pi*np.sin(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.cos(4.*np.pi*(t + 3./10.))
-        # return 2.8*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)) - 4.0*np.pi*np.sin(np.pi*(-0.2*t + 2.0*y))*np.sin(np.pi*(4.0*t + 1.6))*np.cos(np.pi*(-2.8*t + 4.0*x)) - 0.2*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6))
-    
-    def U_js(self, x, y, t):
-        return -wp.c_k_led**(1./2.)*(4.*np.pi*np.cos(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.sin(4.*np.pi*(t - 1./10.)) + 2.*np.pi*np.cos(2.*np.pi*y)*np.sin(4.*np.pi*x)*np.sin(4.*np.pi*(t + 3./10.)))
-        # return -np.c_k_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))+2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
-    
-    def U_jd(self, x, y, t):
-        return -wp.c_mu_led**(1./2.)*(4.*np.pi*np.cos(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.sin(4.*np.pi*(t - 1./10.)) - 2.*np.pi*np.cos(2.*np.pi*y)*np.sin(4.*np.pi*x)*np.sin(4.*np.pi*(t + 3./10.)))
-        # return -np.c_mu_led*(4.0*np.pi*np.sin(np.pi*(4.0*t - 0.4))*np.cos(np.pi*(-1.6*t + 2.0*y))*np.cos(np.pi*(-1.2*t + 4.0*x))-2.0*np.pi*np.cos(np.pi*(-2.8*t + 4.0*x))*np.cos(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
-    
-    def U_jxy(self,x, y, t):
-        return -wp.c_mu_led**(1./2.)*(2.*np.pi*np.cos(2.*np.pi*y)*np.sin(4.*np.pi*x)*np.sin(4.*np.pi*(t - 1./10.)) + 4.*np.pi*np.cos(4.*np.pi*x)*np.sin(2.*np.pi*y)*np.sin(4.*np.pi*(t + 3./10.)))
-        # return -wp.c_mu_led*(-2.0*np.pi*np.sin(np.pi*(-1.6*t + 2.0*y))*np.sin(np.pi*(-1.2*t + 4.0*x))*np.sin(np.pi*(4.0*t - 0.4))-4.0*np.pi*np.sin(np.pi*(-2.8*t + 4.0*x))*np.sin(np.pi*(-0.2*t + 2.0*y))*np.cos(np.pi*(4.0*t + 1.6)))
 
     def post_process(self, i, show_plot=False, figures_dir=None):
         # Write the results, using JAX compute_backend for the post-processing
@@ -177,88 +131,14 @@ class Pulse2D_LED:
                   "sigma_yy": -(wp.c_k_led * U_num_tilde[2] - wp.c_mu_led * U_num_tilde[3]),
                   "sigma_xy": -(wp.c_mu_led * U_num_tilde[4])}
         save_fields_vtk(fields, timestep=i, prefix="results/pulse")
-        # save_image(fields["sigma_xx"], timestep=i, prefix="results/pulse")
-
-        # # Compare solutions on cuts through 2d plane
-        # t = np.float32(i * wp.delta_t_led)
-        # grid_size = self.grid_shape[0]
-        # plot_index = int(0.57 * (grid_size-1))  # set relative cut position here
-        # assert (plot_index >=0) and (plot_index <= grid_size-1), "Plotting position/index invalid"
-        # plot_index_num = plot_index
-        # domain_size = 1
-        # delta_x = domain_size/grid_size
-        # cut_position = delta_x * (plot_index + 0.5)
-        # x_axis_num = np.linspace(delta_x/2, domain_size-delta_x/2, num=grid_size)
-
-        # if show_plot:
-        #     plt.clf()
-        #     plt.plot(x_axis_num, self.u_num_exact_x(x=x_axis_num, y=cut_position, t=t), label="y = const, u_ex_x", color="blue")
-        #     plt.plot(x_axis_num, self.u_num_exact_y(x=cut_position, y=x_axis_num, t=t), label="x = const, u_ex_y", color="green")
-        #     plt.plot(x_axis_num, u_num_displ[0, :, plot_index_num], label="y = const, u_num_x", linestyle=":", color="red")
-        #     plt.plot(x_axis_num, u_num_displ[1, plot_index_num, :], label="y = const, u_num_y", linestyle=":", color="orange")
-        #     plt.grid()
-        #     plt.ylim(-1, 1)
-        #     plt.title(f"t = {t:.6f}s, interval {i}")
-        #     plt.legend()
-        #     plt.draw()
-        #     plt.savefig(f"{figures_dir}/00_ux_uy_figure", dpi=300)
-        #     plt.pause(1)
-
-
-        # """
-        # Approximate error calculation
-        # """
-        # # Calculation for L2 norm
-        # u_ex_x = np.array([np.array([self.u_num_exact_x(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        # u_ex_y = np.array([np.array([self.u_num_exact_y(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-
-        # u_num_x = u_num_displ[0, :, :]
-        # u_num_y = u_num_displ[1, :, :]
-
-        # # norm_error_u = np.linalg.norm(np.stack([(u_ex_x - u_num_x), (u_ex_y - u_num_y)], axis=0))
-        # norm_error_u = np.sum((u_ex_x - u_num_x) ** 2 + (u_ex_y - u_num_y) ** 2)
-        # max_error_u = np.max(np.abs(np.stack([u_ex_x - u_num_x,
-        #                                       u_ex_y - u_num_y,
-        #                                       ], axis=0)))
-        # # norm_u = np.linalg.norm(np.stack([u_ex_x, u_ex_y], axis=0))
-        # norm_u = np.sum((u_ex_x) ** 2 + (u_ex_y) ** 2)
-
-        # self.cumulative_error_u += norm_error_u
-        # self.cumulative_u += norm_u
-        # if max_error_u > self.max_error_u:
-        #     self.max_error_u = max_error_u
-
-        # _U_js_ex = np.array([np.array([self.U_js(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        # _U_jd_ex = np.array([np.array([self.U_jd(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-        # _U_jxy_ex = np.array([np.array([self.U_jxy(x=_y, y=_x, t=t) for _x in x_axis_num]) for _y in x_axis_num])
-
-        # sigma_xx_ex = -(wp.c_k_led ** 0.5 * _U_js_ex + wp.c_mu_led ** 0.5 * _U_jd_ex)
-        # sigma_yy_ex = -(wp.c_k_led ** 0.5 * _U_js_ex - wp.c_mu_led ** 0.5 * _U_jd_ex)
-        # sigma_xy_ex = -(wp.c_mu_led ** 0.5 * _U_jxy_ex)
-
-        # sigma_xx_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] + wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
-        # sigma_yy_num = -(wp.c_k_led ** 0.5 * U_num_tilde[2, :, :] - wp.c_mu_led ** 0.5 * U_num_tilde[3, :, :])
-        # sigma_xy_num = -(wp.c_mu_led ** 0.5 * U_num_tilde[4, :, :])
-
-        # norm_error_sigma = np.sum((sigma_xx_ex - sigma_xx_num) ** 2 + (sigma_yy_ex - sigma_yy_num) ** 2 + (sigma_xy_ex - sigma_xy_num) ** 2)
-        # norm_sigma = np.sum((sigma_xx_ex) ** 2 + (sigma_yy_ex) ** 2 + (sigma_xy_ex) ** 2)
-        # max_error_sigma = np.max(np.abs(np.stack([sigma_xx_ex - sigma_xx_num,
-        #                                           sigma_yy_ex - sigma_yy_num,
-        #                                           sigma_xy_ex - sigma_xy_num
-        #                                           ], axis=0)))
-                
-        # self.cumulative_error_sigma += norm_error_sigma
-        # self.cumulative_sigma += norm_sigma
-        # if max_error_sigma > self.max_error_sigma:
-        #     self.max_error_sigma = max_error_sigma
-
+      
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 200  # Number of grid cells along one dimension
+    grid_size = 1000  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = int(2.5 * grid_size)  # Number of collision/streaming steps
-    pp_interval = int(1)  # Post process interval
+    pp_interval = num_steps + 1  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
@@ -288,6 +168,6 @@ if __name__ == "__main__":
 
     stime = time.time()
     simulation = Pulse2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-    simulation.run(num_steps=num_steps, post_process_interval=pp_interval, show_plot=False)
-    print(f"took {time.time() - stime:.2} seconds")
+    runtime = simulation.run(num_steps=num_steps, post_process_interval=pp_interval, show_plot=False)
+    print(f"took {runtime:.4} seconds")
 
