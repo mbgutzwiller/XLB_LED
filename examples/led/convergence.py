@@ -86,7 +86,7 @@ if __name__ == "__main__":
             axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs1[1].legend()
             fig1.suptitle("Approximate L2 Error of Displacement and Stress")
-            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_"))
+            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_fp64"))
             plt.show(block=False)
 
             # Plotting L2 errors
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs2[1].legend()
             fig2.suptitle("Approximate LINF Error of Displacement and Stress")
-            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_"))
+            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_fp64"))
             plt.show(block=False)
             print(f"l2 errors u: {l2_errors_u}")
             print(f"l2 errors sigma: {l2_errors_sigma}")
