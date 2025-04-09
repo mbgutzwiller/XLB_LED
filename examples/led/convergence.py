@@ -23,7 +23,7 @@ if __name__ == "__main__":
         velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
         # grid_sizes = [10, 20, 40, 80, 120, 160, 240, 320, 640]
-        grid_sizes = [50, 100, 200, 400, 800, 1600, 3200, 4000]
+        grid_sizes = [50, 100, 200, 400, 800, 1600]#, 3200, 4000]
         num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
         l2_errors_u = []
@@ -38,6 +38,7 @@ if __name__ == "__main__":
             from xlb.precision_policy import PrecisionPolicy
             from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
             wp.build.clear_kernel_cache()
+            time.sleep(5)
             print(f"Starting run {i + 1} of {len(grid_sizes)}")
             grid_shape = (grid_size, grid_size)
             
@@ -57,14 +58,16 @@ if __name__ == "__main__":
             wp.grid_size = wp.constant(float(grid_size))
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-            error_u, error_sigma, linf_error_u, linf_error_sigma =  simulation.run(num_steps=num_steps, post_process_interval=int(num_steps/5))
+            error_u, error_sigma, linf_error_u, linf_error_sigma = simulation.run(num_steps=num_steps, post_process_interval=1)
             l2_errors_u.append(error_u)
             l2_errors_sigma.append(error_sigma)
             linf_errors_u.append(linf_error_u)
             linf_errors_sigma.append(linf_error_sigma)
             delta_xs.append(delta_x_led)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
             figures_dir = os.path.join(script_dir, "figures_final")
             os.makedirs(figures_dir, exist_ok=True)
+            wp.build.clear_kernel_cache()
 
             # Plotting L2 errors
             C_u = l2_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence
@@ -83,7 +86,7 @@ if __name__ == "__main__":
             axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs1[1].legend()
             fig1.suptitle("Approximate L2 Error of Displacement and Stress")
-            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led**2, 1)*10)}_"))
+            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_"))
             plt.show(block=False)
 
             # Plotting L2 errors
@@ -105,9 +108,14 @@ if __name__ == "__main__":
             axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs2[1].legend()
             fig2.suptitle("Approximate LINF Error of Displacement and Stress")
-            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led**2, 1)*10)}_"))
+            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_"))
             plt.show(block=False)
+            print(f"l2 errors u: {l2_errors_u}")
+            print(f"l2 errors sigma: {l2_errors_sigma}")
+            print(f"linf errors u: {linf_errors_u}")
+            print(f"linf errors sigma: {linf_errors_sigma}")
         print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
+        
     print("Finished all runs.")
 
 
