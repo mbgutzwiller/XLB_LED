@@ -66,8 +66,8 @@ class SineWave2D_LED:
         # TODO: Adjust BCs here.
         walls = self.define_boundary_indices()
         bc_walls = DirichletBC_LED(indices=walls, velocity_set=self.velocity_set)
-        # self.boundary_conditions = [bc_walls]
-        self.boundary_conditions = []
+        self.boundary_conditions = [bc_walls]
+        # self.boundary_conditions = []
 
     def setup_stepper(self):
         self.stepper_stream = LinearElastodynamicsStepperStream(
@@ -108,6 +108,8 @@ class SineWave2D_LED:
 
             # Postprocessing: Show plot or calculate error
             if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and post_process_interval < num_steps:
+                wp.synchronize_device()
+                wp.synchronize()
                 self.post_process(timestep, show_plot)
             
             # Streaming
