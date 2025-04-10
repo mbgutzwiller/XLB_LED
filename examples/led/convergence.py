@@ -22,8 +22,8 @@ if __name__ == "__main__":
 
         velocity_set = xlb.velocity_set.D2Q4(precision_policy=precision_policy, compute_backend=compute_backend)
 
-        # grid_sizes = [10, 20, 40, 80, 120, 160, 240, 320, 640]
-        grid_sizes = [50, 100, 200, 400, 800, 1600]#, 3200, 4000]
+        grid_sizes = [20, 40, 80, 120, 160, 240, 320, 640]
+        # grid_sizes = [40, 100, 200, 400, 800]#, 3200, 4000]
         num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
 
         l2_errors_u = []
@@ -74,19 +74,19 @@ if __name__ == "__main__":
             C_sigma = l2_errors_sigma[0] / (delta_xs[0] ** 2)
             fig1, axs1 = plt.subplots(1, 2, figsize = (10, 5))
             axs1[0].loglog(delta_xs, l2_errors_u, marker="o", markersize=8)
-            axs1[0].set_xlabel("delta_x [m]")
-            axs1[0].set_ylabel("error [m]")
+            axs1[0].set_xlabel("Grid Spacing [m]")
+            axs1[0].set_ylabel("Rel. Error Displ. [-]")
             axs1[0].grid(True, which="both")
             axs1[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs1[0].legend()
             axs1[1].loglog(delta_xs, l2_errors_sigma, marker="o", markersize=8)
-            axs1[1].set_xlabel("delta_x [m]")
-            axs1[1].set_ylabel("error [N/m^2]")
+            axs1[1].set_xlabel("Grid Spacing [m]")
+            axs1[1].set_ylabel("Rel. Error Stress [-]")
             axs1[1].grid(True, which="both")
             axs1[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs1[1].legend()
-            fig1.suptitle("Approximate L2 Error of Displacement and Stress")
-            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_fp64"))
+            fig1.suptitle(r"$L_{2}$ Error of Displacement and Stress")
+            plt.savefig(os.path.join(figures_dir, f"L2_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_final"))
             plt.show(block=False)
 
             # Plotting L2 errors
@@ -95,20 +95,20 @@ if __name__ == "__main__":
             C_sigma_linear = linf_errors_sigma[0] / (delta_xs[0])
             fig2, axs2 = plt.subplots(1, 2, figsize = (10, 5))
             axs2[0].loglog(delta_xs, linf_errors_u, marker="o", markersize=8)
-            axs2[0].set_xlabel("delta_x [m]")
-            axs2[0].set_ylabel("error [m]")
+            axs2[0].set_xlabel("Grid Spacing [m]")
+            axs2[0].set_ylabel("Rel. Error Displ. [-]")
             axs2[0].grid(True, which="both")
             axs2[0].loglog(delta_xs, C_u * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs2[0].legend()
             axs2[1].loglog(delta_xs, linf_errors_sigma, marker="o", markersize=8)
-            axs2[1].set_xlabel("delta_x [m]")
-            axs2[1].set_ylabel("error [N/m^2]")
+            axs2[1].set_xlabel("Grid Spacing [m]")
+            axs2[1].set_ylabel("Rel. Error Stress [-]")
             axs2[1].grid(True, which="both")
             axs2[1].loglog(delta_xs, C_sigma_linear * np.array(delta_xs), "--", label="Slope = 1", alpha=1, color="orange")
             axs2[1].loglog(delta_xs, C_sigma * np.array(delta_xs)**2, "--", label="Slope = 2", alpha=0.5, color="black")
             axs2[1].legend()
-            fig2.suptitle("Approximate LINF Error of Displacement and Stress")
-            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_fp64"))
+            fig2.suptitle(r"$L_{\infty}$ Error of Displacement and Stress")
+            plt.savefig(os.path.join(figures_dir, f"LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_final"))
             plt.show(block=False)
             print(f"l2 errors u: {l2_errors_u}")
             print(f"l2 errors sigma: {l2_errors_sigma}")
