@@ -18,13 +18,14 @@ wp.build.clear_kernel_cache()
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    _c_k = [1.5]
-    _c_mu =[0.]
+    _c_k = [0.8]
+    _c_mu =[0.7]
 
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
 
-    grid_sizes = [int(16 * 2**n) for n in range(4)]
+    # grid_sizes = [int(16 * 2**n) for n in range(4)]
+    grid_sizes = [50, 100, 200, 400]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for run_i in range(3):
