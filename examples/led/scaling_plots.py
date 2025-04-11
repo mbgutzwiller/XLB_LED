@@ -19,6 +19,9 @@ runtimes_f0bound_comp = np.array([10.339588642120361, 10.35711407661438, 10.5318
 runtimes_fpaper_no_comp = np.array([0.017750024795532227, 0.03725457191467285, 0.07348299026489258, 0.19050264358520508, 2.155949354171753, 19.72943687438965, 69.55024290084839, 167.87471508979797, 334.1596167087555])
 runtimes_fpaper_comp = np.array([24.695094108581543, 25.186437845230103, 25.091731548309326, 24.97805643081665, 26.81846523284912, 44.416804790496826, 94.5247917175293, 192.75134301185608, 359.12451338768005])
 
+runtimes_pulse_no_comp = np.array([0.019057512283325195, 0.03693699836730957, 0.07302212715148926, 0.14704251289367676, 1.1316006183624268, 10.414189338684082, 36.79493451118469, 86.84429693222046, 179.3451910018921])
+runtimes_pulse_comp = np.array([4.489064693450928, 4.373861312866211, 4.420517206192017, 4.513129234313965, 5.517155170440674, 14.902408361434937, 41.571467876434326, 93.24848079681396, 188.32559299468994])
+
 C_1 = runtimes_f0bound_no_comp[0] / grid_sizes[0]  # scale to match first point
 C_3 = runtimes_f0bound_no_comp[3] / grid_sizes[3]**3  # scale to match first point
 C_4 = runtimes_f0bound_no_comp[3] / grid_sizes[3]**4  # scale to match first point
@@ -27,10 +30,12 @@ plt.figure(figsize=(8, 5))
 # plt.loglog(grid_sizes, C_1 * grid_sizes, "--", label="Slope = 1", color="black", alpha=0.8)
 # plt.loglog(grid_sizes, C_3 * grid_sizes**3, "-.", label="Slope = 3", color="black", alpha=0.8)
 # plt.loglog(grid_sizes, C_4 * grid_sizes**4, ":", label="Slope = 4", color="black", alpha=0.8)
-plt.loglog(grid_sizes, runtimes_f0bound_no_comp, marker="o", label="Runtime only", color="blue")
-plt.loglog(grid_sizes, runtimes_fpaper_no_comp, "o:", label="Runtime only", color="blue")
-plt.loglog(grid_sizes, runtimes_f0bound_comp, marker="o", label="Runtime + compilation time", color="green")
-plt.loglog(grid_sizes, runtimes_fpaper_comp, "o:", label="Runtime + compilation time", color="green")
+# plt.loglog(grid_sizes, runtimes_f0bound_no_comp, marker="o", label="Runtime only f0", color="blue")
+# plt.loglog(grid_sizes, runtimes_fpaper_no_comp, "o:", label="Runtime only fpaper", color="blue")
+plt.loglog(grid_sizes, runtimes_pulse_no_comp, "o-", label="Runtime only pulse", color="blue")
+# plt.loglog(grid_sizes, runtimes_f0bound_comp, marker="o", label="Runtime + compil. time f0", color="green")
+# plt.loglog(grid_sizes, runtimes_fpaper_comp, "o:", label="Runtime + compil. time fpaper", color="green")
+plt.loglog(grid_sizes, runtimes_pulse_comp, "o-", label="Runtime + compil. time pulse", color="green")
 plt.ylim(0.5*np.min(runtimes_f0bound_no_comp), 2*np.max(runtimes_f0bound_comp))
 plt.xlabel("Grid size [-]")
 plt.ylabel("Runtime [s]")
