@@ -117,13 +117,12 @@ class SineWave2D_LED:
 
         # Calculation for L2 norm
         ftime = time.time()
-        print(ftime - stime)
         final_error_norm_u = np.sqrt(self.cumulative_error_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_u = np.sqrt(self.cumulative_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-        # return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, ftime-stime
-        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma
+        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, ftime-stime
+        # return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma
 
     def u_num_exact_x(self, x, y, t):
         return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
