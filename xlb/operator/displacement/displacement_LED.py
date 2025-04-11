@@ -10,7 +10,6 @@ from functools import partial
 
 
 class Displacement_LED(Operator):
-    # This class is probably unnecessary
     """
     Half time integration step for displacement solution.
     """
@@ -18,7 +17,8 @@ class Displacement_LED(Operator):
     @Operator.register_backend(ComputeBackend.JAX)  #  TODO: jax implementation of time integration of displacement solution
     @partial(jit, static_argnums=(0,))
     def jax_implementation(self, U_num_tilde: jnp.ndarray, u_num_displ: jnp.ndarray):
-        return u_num_displ + U_num_tilde[:2] / 400  #ardcoded for numsteps=200
+        raise NotImplementedError("is hardcoded right now")
+        # return u_num_displ + U_num_tilde[:2] / 400  #hardcoded for numsteps=200, but works like this
 
     def _construct_warp(self):
         # Set local constants TODO: This is a hack and should be fixed with warp update
