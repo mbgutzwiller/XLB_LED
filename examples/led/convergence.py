@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # grid_sizes = [int(16 * 2**n) for n in range(4)]
     # grid_sizes = [40, 80, 120, 160, 240]
-    grid_sizes = np.array([50, 100, 200, 300, 400, 600, 800, 1600, 2400, 3200, 4000])
+    grid_sizes = [50, 100, 200, 300, 400, 600, 800, 1600, 2400, 3200, 4000]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for c_k_led, c_mu_led in zip(c_k, c_mu):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
             wp.build.clear_kernel_cache()
-            error_u, error_sigma, linf_error_u, linf_error_sigma = simulation.run(num_steps=num_steps, post_process_interval=1)
+            error_u, error_sigma, linf_error_u, linf_error_sigma, _ = simulation.run(num_steps=num_steps, post_process_interval=1)
             print(np.float32(wp.c_k_led)**2)
             l2_errors_u.append(error_u)
             l2_errors_sigma.append(error_sigma)
