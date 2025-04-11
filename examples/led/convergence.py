@@ -25,7 +25,8 @@ if __name__ == "__main__":
 
 
     # grid_sizes = [int(16 * 2**n) for n in range(4)]
-    grid_sizes = [40, 80, 120, 160, 240]
+    # grid_sizes = [40, 80, 120, 160, 240]
+    grid_sizes = np.array([50, 100, 200, 300, 400, 600, 800, 1600, 2400, 3200, 4000])
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for c_k_led, c_mu_led in zip(c_k, c_mu):
@@ -120,11 +121,11 @@ if __name__ == "__main__":
             # fig2.suptitle(r"Relative $L_{\infty}$ Error of Displacement and Stress", fontsize=16)
             plt.savefig(os.path.join(figures_dir, f"dirBC_LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_final"), dpi=600)
             plt.show(block=False)
-        print(f"l2 errors u: {l2_errors_u}")
-        print(f"l2 errors sigma: {l2_errors_sigma}")
-        print(f"linf errors u: {linf_errors_u}")
-        print(f"linf errors sigma: {linf_errors_sigma}")
-        print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
+            print(f"l2 errors u: {l2_errors_u}")
+            print(f"l2 errors sigma: {l2_errors_sigma}")
+            print(f"linf errors u: {linf_errors_u}")
+            print(f"linf errors sigma: {linf_errors_sigma}")
+            print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
     print("Finished all runs.")
 
 
