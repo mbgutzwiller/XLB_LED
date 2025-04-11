@@ -78,7 +78,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         
         from xlb.helper.initializers_v2 import initialize_f_U_num_LED  # TODO: initialze eq for LED
 
-        f_0 , U_0, u_num_displ_0, u_num_displ_1 = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
+        f_0 , U_0, u_num_displ_0, u_num_displ_1, error_u = initialize_f_U_num_LED(f_0, self.grid, self.precision_policy, self.compute_backend)
 
         # Copy f_0 using backend-specific copy to f_1
         if self.compute_backend == ComputeBackend.JAX:
@@ -91,7 +91,7 @@ class LinearElastodynamicsStepperCollide(Stepper):
         # Initialize auxiliary data if needed
         f_0, f_1 = self._initialize_auxiliary_data(self.boundary_conditions, f_0, f_1, bc_mask, missing_mask)
 
-        return f_0, f_1, f_temp, bc_mask, missing_mask, U_0, u_num_displ_0, u_num_displ_1
+        return f_0, f_1, f_temp, bc_mask, missing_mask, U_0, u_num_displ_0, u_num_displ_1, error_u
 
     @classmethod
     def _process_boundary_conditions(cls, boundary_conditions, bc_mask, missing_mask):  # TODO: initialize the BCs, maybe OK
