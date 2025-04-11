@@ -102,19 +102,21 @@ class SineWave2D_LED:
             # Collision
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
+            if timestep == 2:
+                stime = time.time()
             # Postprocessing: Show plot or calculate error
             if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and post_process_interval < num_steps:
                 self.post_process(timestep, show_plot)
             
             # Streaming
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
-
+        ftime = time.time()
         # Calculation for L2 norm
         final_error_norm_u = np.sqrt(post_process_interval * self.cumulative_error_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_u = np.sqrt(post_process_interval * self.cumulative_u * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_error_norm_sigma = np.sqrt(post_process_interval * self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_sigma = np.sqrt(post_process_interval * self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
-        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma
+        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, ftime-stime
 
 
     def u_num_exact_x(self, x, y, t):
