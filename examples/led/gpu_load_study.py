@@ -22,8 +22,8 @@ handle = nvmlDeviceGetHandleByIndex(0)
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    _c_k = [1.4]
-    _c_mu =[0.1]
+    _c_k = [0.8]
+    _c_mu =[0.7]
 
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
@@ -43,6 +43,7 @@ if __name__ == "__main__":
         delta_xs = []
         runtimes = []
         grid_size_run = []
+
         gpu_vrams = []
         gpu_powers = []
         gpu_compute_utils = []
@@ -102,42 +103,11 @@ if __name__ == "__main__":
             print(f"Memory Utilization  : {mem_util}%")
             print(f"Power Usage         : {power} W (Limit: {power_limit} W)")
             print(f"VRAM Usage          : {vram_used:.1f} MB / {vram_total:.1f} MB")
-            
-            print(f"grid size {grid_size} fits on gpu")
-            print(np.float32(wp.c_k_led)**2)
-            l2_errors_u.append(error_u)
-            l2_errors_sigma.append(error_sigma)
-            linf_errors_u.append(linf_error_u)
-            linf_errors_sigma.append(linf_error_sigma)
-            delta_xs.append(delta_x_led)
-            runtimes.append(runtime)
-            grid_size_run.append(grid_size)
-            _index = 3 if len(grid_size_run) >=4 else -1
-            C_loglog_3 = runtimes[_index] / (grid_size_run[_index]**3)  # reference line for 2nd order convergence
-            C_loglog_4 = runtimes[_index] / (grid_size_run[_index]**4)  # reference line for 2nd order convergence
-            C_loglog_1 = runtimes[0] / (grid_size_run[0])  # reference line for 2nd order convergence
-            fig1, axs1 = plt.subplots(1, 1, figsize = (10, 5))
-            axs1.loglog(grid_size_run, runtimes, marker="o", markersize=8, color="black")
-            axs1.set_xlabel("Grid size")
-            axs1.set_ylabel("Runtime [s]")
-            axs1.grid(True, which="both")
-            axs1.loglog(grid_size_run, C_loglog_1 * np.array(grid_size_run), ":", label="Slope = 1", alpha=0.5, color="black")
-            axs1.loglog(grid_size_run, C_loglog_3 * np.array(grid_size_run)**3, "--", label="Slope = 3", alpha=0.5, color="black")
-            axs1.loglog(grid_size_run, C_loglog_4 * np.array(grid_size_run)**4, "-.", label="Slope = 4", alpha=0.5, color="black")
-            axs1.legend()
 
-            # Save plot using absolute path
-            # Get path to current script
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-
-            # Full path to 'figures/' folder next to this script
-            figures_dir = os.path.join(script_dir, "figures")
-            os.makedirs(figures_dir, exist_ok=True)
-            # plt.savefig(os.path.join(figures_dir, f"scaling_ck_{int(np.round(c_k_led**2, 1)*10)}_134_test"))
-            # plt.savefig(f"figures/scaling_ck_{int(np.round(c_k_led**2, 1)*10)}_134_test")
-            # plt.savefig(f"/home/merrillg/XLB_LED/examples/led/figures/f_paper_dirBC_u_sig_L2_ck_{int(np.round(c_k_led**2, 1)*10)}_16_2_n_{len(grid_sizes)}_test_run{run_i}")
-            plt.show(block=False)
-
+            print(f"gpu comp util: {gpu_compute_utils}")
+            print(f"gpu mem util: {gpu_mem_utils}")
+            print(f"gpu vram: {gpu_vrams}")
+            print(f"gpu power: {gpu_powers}")
 
         print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
     print("Finished all runs.")

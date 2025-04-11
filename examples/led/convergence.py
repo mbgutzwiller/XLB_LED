@@ -20,8 +20,8 @@ plt.rcParams['axes.labelsize'] = 14      # X and Y labels
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    _c_k = [0.8]
-    _c_mu =[0.7]
+    _c_k = [1.5]
+    _c_mu =[0.]
 
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
             stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2)/c_led
             print(f"Stability factor: {stability_factor}")
-            assert stability_factor < 1, "Unstable"
+            assert stability_factor < 1, f"Unstable: {stability_factor}"
 
             wp.c_mu_led = wp.constant(c_mu_led)
             wp.c_k_led = wp.constant(c_k_led)
