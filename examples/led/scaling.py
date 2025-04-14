@@ -11,7 +11,7 @@ import xlb
 from xlb.compute_backend import ComputeBackend
 from xlb.precision_policy import PrecisionPolicy
 from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
-wp.build.clear_kernel_cache()
+# wp.build.clear_kernel_cache()
 
 plt.rcParams['axes.titlesize'] = 16      # Title
 plt.rcParams['axes.labelsize'] = 14      # X and Y labels
@@ -28,6 +28,7 @@ if __name__ == "__main__":
     # grid_sizes = [40, 80, 160, 320, 640, 1280, 2560, 3840]
     # grid_sizes = [50, 100, 200, 400, 800, 1600, 2400, 3200, 4000]
     grid_sizes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 800, 1600, 2400, 3200, 4000]
+    grid_sizes = [800]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for c_k_led, c_mu_led in zip(c_k, c_mu):
@@ -50,7 +51,7 @@ if __name__ == "__main__":
             from xlb.compute_backend import ComputeBackend
             from xlb.precision_policy import PrecisionPolicy
             from sine_wave_2d_linear_elastodynamics_v2 import SineWave2D_LED
-            wp.build.clear_kernel_cache()
+            # wp.build.clear_kernel_cache()
             print(f"Starting run {i + 1} of {len(grid_sizes)}")
             grid_shape = (grid_size, grid_size)
             
@@ -81,7 +82,7 @@ if __name__ == "__main__":
             script_dir = os.path.dirname(os.path.abspath(__file__))
             figures_dir = os.path.join(script_dir, "figures_final")
             os.makedirs(figures_dir, exist_ok=True)
-            wp.build.clear_kernel_cache()
+            # wp.build.clear_kernel_cache()
 
             # Plotting L2 errors
             # C_u = linf_errors_u[0] / (delta_xs[0] ** 2)  # reference line for 2nd order convergence

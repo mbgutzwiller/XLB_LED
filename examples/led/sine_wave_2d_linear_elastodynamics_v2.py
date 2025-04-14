@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from xlb.operator.stream import Stream_LED
 from tqdm import tqdm
 
-wp.build.clear_kernel_cache()
+# wp.build.clear_kernel_cache()
 plt.ion()
 
 # wp.config.print_launches = False
