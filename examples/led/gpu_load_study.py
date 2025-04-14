@@ -28,7 +28,7 @@ if __name__ == "__main__":
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
 
-    grid_sizes = [50, 100, 200, 400, 800, 1600, 2400, 3200, 4000]
+    grid_sizes = [50, 100, 150, 200, 250, 300, 350, 400, 800, 1600, 2400, 3200, 4000]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     for c_k_led, c_mu_led in zip(c_k, c_mu):
         compute_backend = ComputeBackend.WARP
