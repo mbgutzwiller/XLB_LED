@@ -86,23 +86,23 @@ class Equilibrium_LED(Equilibrium):
         def functional(
             U_num_tilde: Any
         ):
-            c_K_j_s = U_num_tilde[2] * wp.c_k_led ** 0.5
-            c_mu_j_d = U_num_tilde[3] * wp.c_mu_led ** 0.5
-            c_mu_j_xy = U_num_tilde[4] * wp.c_mu_led ** 0.5
-            c_mu_v_x = U_num_tilde[0] * wp.c_mu_led ** 0.5
-            c_mu_v_y = U_num_tilde[1] * wp.c_mu_led ** 0.5
+            c_K_j_s = U_num_tilde[2] * wp.c_k_led ** self.compute_dtype(0.5)
+            c_mu_j_d = U_num_tilde[3] * wp.c_mu_led ** self.compute_dtype(0.5)
+            c_mu_j_xy = U_num_tilde[4] * wp.c_mu_led ** self.compute_dtype(0.5)
+            c_mu_v_x = U_num_tilde[0] * wp.c_mu_led ** self.compute_dtype(0.5)
+            c_mu_v_y = U_num_tilde[1] * wp.c_mu_led ** self.compute_dtype(0.5)
             phi_x_tilde = _phi_x_tilde_2c()
             phi_y_tilde = _phi_y_tilde_2c()
 
             phi_x_tilde[0] = c_K_j_s + c_mu_j_d
             phi_x_tilde[1] = c_mu_j_xy
-            phi_x_tilde[2] = wp.c_k_led ** 0.5 * U_num_tilde[0]
+            phi_x_tilde[2] = wp.c_k_led ** self.compute_dtype(0.5) * U_num_tilde[0]
             phi_x_tilde[3] = c_mu_v_x
             phi_x_tilde[4] = c_mu_v_y
 
             phi_y_tilde[0] = c_mu_j_xy
             phi_y_tilde[1] = c_K_j_s - c_mu_j_d
-            phi_y_tilde[2] = wp.c_k_led ** 0.5 * U_num_tilde[1]
+            phi_y_tilde[2] = wp.c_k_led ** self.compute_dtype(0.5) * U_num_tilde[1]
             phi_y_tilde[3] = -c_mu_v_y
             phi_y_tilde[4] = c_mu_v_x
 

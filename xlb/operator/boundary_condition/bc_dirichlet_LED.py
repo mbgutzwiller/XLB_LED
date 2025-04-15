@@ -58,8 +58,8 @@ class DirichletBC_LED(BoundaryCondition_LED):
         def dudt_tilde_func(x: wp.float32, y: wp.float32, t: wp.float32):
             _dudt_D_tilde = _dudt_D_tilde_vector_vec(0.)
             # 0 BC for hard reflection.
-            _dudt_D_tilde[0] = 0. #4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t - 1./10.))
-            _dudt_D_tilde[1] = 0. #4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t + 3./10.))
+            _dudt_D_tilde[0] = self.compute_dtype(0.) #4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t - 1./10.))
+            _dudt_D_tilde[1] = self.compute_dtype(0.) #4.*wp.pi*wp.sin(4.*wp.pi*x)*wp.sin(2.*wp.pi*y)*wp.cos(4.*wp.pi*(t + 3./10.))
             return _dudt_D_tilde
         
         # Construct the functional for this BC
