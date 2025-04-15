@@ -135,16 +135,16 @@ class Pulse2D_LED:
 
 if __name__ == "__main__":
     # # Running the simulation
-    grid_size = 1000  # Number of grid cells along one dimension
+    grid_size = 80  # Number of grid cells along one dimension
     grid_shape = (grid_size, grid_size)
     num_steps = int(2.5 * grid_size)  # Number of collision/streaming steps
-    pp_interval = num_steps + 1  # Post process interval
+    pp_interval = 1  # Post process interval
     domain_size = 1  # Size of domain in meters
     delta_x_led = domain_size/grid_size
     total_time = 1  # Total real world time
     delta_t_led = total_time/num_steps
     c_led = delta_x_led/delta_t_led
-    c_k_led = 0.8  
+    c_k_led = 0.8
     c_mu_led = 0.7
     stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2.0)/c_led
 
