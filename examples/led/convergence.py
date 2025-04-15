@@ -27,7 +27,7 @@ if __name__ == "__main__":
     c_mu = [_**0.5 for _ in _c_mu]
 
     # grid_sizes = [int(16 * 2**n) for n in range(4)]
-    grid_sizes = [40, 80, 160, 320, 640, 1280]
+    grid_sizes = [2560, int(3*1280)]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for c_k_led, c_mu_led in zip(c_k, c_mu):
@@ -41,6 +41,7 @@ if __name__ == "__main__":
         linf_errors_u = []
         linf_errors_sigma = []
         delta_xs = []
+        errors_warp = []
 
         for grid_size, num_steps, i in zip(grid_sizes, num_stepss, range(len(grid_sizes))):
             import xlb
@@ -56,7 +57,7 @@ if __name__ == "__main__":
             c_led = delta_x_led/delta_t_led
 
             stability_factor = 2.0*np.sqrt(c_k_led**2+c_mu_led**2)/c_led
-            print(f"Stability factor: {stability_factor}")
+            # print(f"Stability factor: {stability_factor}")
             assert stability_factor < 1, "Unstable"
 
             wp.c_mu_led = wp.constant(c_mu_led)
@@ -68,8 +69,10 @@ if __name__ == "__main__":
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
             wp.build.clear_kernel_cache()
-            error_u, error_sigma, linf_error_u, linf_error_sigma = simulation.run(num_steps=num_steps, post_process_interval=1)
-            print(np.float32(wp.c_k_led)**2)
+            error_u, error_sigma, linf_error_u, linf_error_sigma, l2err_warp = simulation.run(num_steps=num_steps, post_process_interval=1)
+            errors_warp.append(l2err_warp)
+            print(f"errors warp: {errors_warp}")
+            # print(np.float32(wp.c_k_led)**2)
             l2_errors_u.append(error_u)
             l2_errors_sigma.append(error_sigma)
             linf_errors_u.append(linf_error_u)
