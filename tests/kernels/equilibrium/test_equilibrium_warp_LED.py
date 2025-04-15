@@ -37,11 +37,12 @@ def test_quadratic_equilibrium_warp(dim, velocity_set, grid_shape):
     f_eq = my_grid.create_field(cardinality=20)
 
     compute_macro = Equilibrium_LED()
-    U_num_tilde = compute_macro(U_num_tilde, f_eq)
+    f_eq = compute_macro(U_num_tilde, f_eq)
 
-    U_num_tilde_np = U_num_tilde.numpy()
+    # U_num_tilde_np = U_num_tilde.numpy()
+    f_eq = f_eq.numpy()
 
-    assert np.allclose(U_num_tilde_np, np.array([0, 0, 0, 0, 0])), "U_num_tilde should be 0.0 in every entry."
+    assert np.allclose(f_eq, np.array([0, 0, 0, 0, 0,0, 0, 0, 0, 0,0, 0, 0, 0, 0,0, 0, 0, 0, 0])), "feq should be 0.0 in every entry."
     # TODO: check other statistics
 
 
