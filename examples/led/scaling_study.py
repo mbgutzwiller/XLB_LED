@@ -22,8 +22,8 @@ handle = nvmlDeviceGetHandleByIndex(0)
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    _c_k = [1.4]
-    _c_mu =[0.1]
+    _c_k = [0.8]
+    _c_mu =[0.7]
 
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]

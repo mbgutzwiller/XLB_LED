@@ -20,8 +20,8 @@ plt.rcParams['axes.labelsize'] = 14      # X and Y labels
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    _c_k = [1.5]
-    _c_mu =[0.]
+    _c_k = [0.8]
+    _c_mu =[0.7]
 
     c_k = [_**0.5 for _ in _c_k]
     c_mu = [_**0.5 for _ in _c_mu]
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
             wp.build.clear_kernel_cache()
-            error_u, error_sigma, linf_error_u, linf_error_sigma = simulation.run(num_steps=num_steps, post_process_interval=1)
+            error_u, error_sigma, linf_error_u, linf_error_sigma, runtime_ = simulation.run(num_steps=num_steps, post_process_interval=1)
             print(np.float32(wp.c_k_led)**2)
             l2_errors_u.append(error_u)
             l2_errors_sigma.append(error_sigma)
