@@ -98,6 +98,9 @@ def test_bc_dirichlet_warp(dim, velocity_set, grid_shape):
 
     for i in range(4):
         if dim == 2:
+            for j in range(2):
+                if missing_mask[i] == wp.uint8(1):
+                    assert np.allclose(-f[velocity_set.opp_indices[i] * 5 + j, indices[0], indices[1]], f_post[i * 5 + j, indices[0], indices[1]]), f"what flows in in post stream should what flows ot in pre stream."
             for j in range(2, 5):
                 if missing_mask[i] == wp.uint8(1):
                     print(f_post[i * 5 + j, indices[0], indices[1]])
