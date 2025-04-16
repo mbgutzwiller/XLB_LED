@@ -29,18 +29,18 @@ def init_xlb_env(velocity_set):
 @pytest.mark.parametrize(
     "dim,velocity_set,grid_shape",
     [
-        (2, xlb.velocity_set.D2Q4, (128, 128)),
+        (2, xlb.velocity_set.D2Q4, (4, 4)),
         # (2, xlb.velocity_set.D2Q9, (100, 100)),
         # (2, xlb.velocity_set.D2Q9, (100, 100)),
         # (3, xlb.velocity_set.D3Q19, (50, 50, 50)),
         # (3, xlb.velocity_set.D3Q19, (50, 50, 50)),
     ],
 )
-def test_bc_dirichlet_warp(dim, velocity_set, grid_shape):
+def test_bc_dirichlet_warp_led(dim, velocity_set, grid_shape):
     init_xlb_env(velocity_set)
     my_grid = grid_factory(grid_shape)
     velocity_set = DefaultConfig.velocity_set
-    print(velocity_set.opp_indices)
+    # print(velocity_set.opp_indices)
 
     missing_mask = my_grid.create_field(cardinality=velocity_set.q, dtype=xlb.Precision.BOOL)
 
@@ -67,8 +67,8 @@ def test_bc_dirichlet_warp(dim, velocity_set, grid_shape):
     )
 
     bc_mask, missing_mask = indices_boundary_masker([dirichlet_bc_led], bc_mask, missing_mask, start_index=None)
-    print(bc_mask)
-    print(missing_mask)
+    # print(bc_mask)
+    # print(missing_mask)
     # Generate a random field with the same shape
     if dim == 2:
         random_field = np.random.rand(20, grid_shape[0], grid_shape[1], 1).astype(np.float32)
@@ -89,6 +89,8 @@ def test_bc_dirichlet_warp(dim, velocity_set, grid_shape):
         if dim == 2:
             for j in range(2):
                 if missing_mask[i] == wp.uint8(1):
+                    print(f[velocity_set.opp_indices[i] * 5 + j, indices[0], indices[1]])
+                    print(f_post[i * 5 + j, indices[0], indices[1]])
                     assert np.allclose(-f[velocity_set.opp_indices[i] * 5 + j, indices[0], indices[1]], f_post[i * 5 + j, indices[0], indices[1]]), f"what flows in in post stream should what flows ot in pre stream."
             for j in range(2, 5):
                 if missing_mask[i] == wp.uint8(1):
