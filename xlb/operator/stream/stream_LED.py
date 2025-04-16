@@ -115,5 +115,4 @@ class Stream_LED(Operator):
             ],
             dim=f_0.shape[1:],
         )
-        wp.synchronize_device()
         return f_1
