@@ -22,8 +22,6 @@ from xlb.operator.boundary_condition.boundary_condition_LED import (
 class DirichletBC_LED(BoundaryCondition_LED):
     """
     Halfway Bounce-back boundary condition for a lattice Boltzmann method simulation.
-
-    TODO: Implement moving boundary conditions for this
     """
 
     def __init__(

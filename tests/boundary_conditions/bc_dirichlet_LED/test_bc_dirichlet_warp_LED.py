@@ -29,7 +29,7 @@ def init_xlb_env(velocity_set):
 @pytest.mark.parametrize(
     "dim,velocity_set,grid_shape",
     [
-        (2, xlb.velocity_set.D2Q4, (4, 4)),
+        (2, xlb.velocity_set.D2Q4, (128, 128)),
         # (2, xlb.velocity_set.D2Q9, (100, 100)),
         # (2, xlb.velocity_set.D2Q9, (100, 100)),
         # (3, xlb.velocity_set.D3Q19, (50, 50, 50)),
@@ -71,7 +71,7 @@ def test_bc_dirichlet_warp(dim, velocity_set, grid_shape):
     print(missing_mask)
     # Generate a random field with the same shape
     if dim == 2:
-        random_field = np.random.rand(velocity_set.q * 5, grid_shape[0], grid_shape[1], 1).astype(np.float32)
+        random_field = np.random.rand(20, grid_shape[0], grid_shape[1], 1).astype(np.float32)
     else:
         raise NotImplementedError
 
@@ -80,24 +80,16 @@ def test_bc_dirichlet_warp(dim, velocity_set, grid_shape):
     f_post = wp.array(random_field)
     f = wp.array(random_field)
 
-    # f = my_grid.create_field(cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32)
-    # f_pre = my_grid.create_field(cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32)
-    # f_post = my_grid.create_field(
-        # cardinality=velocity_set.q * 5, dtype=xlb.Precision.FP32, fill_value=1.0
-    # )  # Arbitrary value so that we can check if the values are changed outside the boundary
-
-    # f = equilibrium_bc(f_pre, f_post, bc_mask, missing_mask)
-    wp.c_k_led = wp.constant(0.)  # Set to zero so we can check at least the stress components of the f since the function on the boundary can vary.
-    wp.c_mu_led = wp.constant(0.)  # The post stress components are the negative of the opposite direction of the pre streaming components.
     f = dirichlet_bc_led(f_pre, f_post, bc_mask, missing_mask)
 
     f = f.numpy()
     f_post = f_post.numpy()
-    # diff_f = (f-f_post)
-
 
     for i in range(4):
         if dim == 2:
+            for j in range(2):
+                if missing_mask[i] == wp.uint8(1):
+                    assert np.allclose(-f[velocity_set.opp_indices[i] * 5 + j, indices[0], indices[1]], f_post[i * 5 + j, indices[0], indices[1]]), f"what flows in in post stream should what flows ot in pre stream."
             for j in range(2, 5):
                 if missing_mask[i] == wp.uint8(1):
                     print(f_post[i * 5 + j, indices[0], indices[1]])
@@ -118,4 +110,5 @@ if __name__ == "__main__":
     wp.delta_t_led = wp.constant(physical_time/num_steps)
     wp.delta_x_led = wp.constant(domain_size/grid_size)
     wp.c_led = wp.constant(wp.delta_x_led/wp.delta_t_led)
+    wp.S_pulse = wp.constant(5e-3)
     pytest.main()
