@@ -69,10 +69,10 @@ C_loglog_4 = runtimes[_index] / (grid_sizes[_index])**4  # reference line for 2n
 C_loglog_1 = runtimes[0] / (grid_sizes[0])  # reference line for 2nd order convergence
 
 fig1, axs1 = plt.subplots(1, 1, figsize = (8, 5))
-axs1.semilogx(grid_sizes, gpu_utilization_plot, markersize=8, label=f"GPU Compute Util. (max = {max(gpu_utilization)}%)")
-axs1.semilogx(grid_sizes, mem_utilization_plot, markersize=8, label=f"GPU Mem. Bandw. (max = {max(mem_utilization)}%)")
-axs1.semilogx(grid_sizes, power_usage_plot, markersize=8, label=f"GPU Power (max = {np.round(max(power_usage), 2)} W)")
-axs1.semilogx(grid_sizes, vram_usage_plot, markersize=8, label=f"GPU VRAM Util. (max = {np.round(max(vram_usage/1000), 2)} Gb)")
+axs1.semilogx(grid_sizes, gpu_utilization_plot, marker="o", markersize=8, label=f"GPU Compute Util. (max = {max(gpu_utilization)}%)")
+axs1.semilogx(grid_sizes, mem_utilization_plot, marker="o", markersize=8, label=f"GPU Mem. Bandw. (max = {max(mem_utilization)}%)")
+axs1.semilogx(grid_sizes, power_usage_plot, marker="o", markersize=8, label=f"GPU Power (max = {np.round(max(power_usage), 2)} W)")
+axs1.semilogx(grid_sizes, vram_usage_plot, marker="o", markersize=8, label=f"GPU VRAM Util. (max = {np.round(max(vram_usage/1000), 2)} Gb)")
 axs1.set_xlabel("Grid size [-]")
 axs1.set_ylabel("Relative [-]")
 axs1.grid(True, which="both")
