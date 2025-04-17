@@ -98,7 +98,7 @@ class Pulse2D_LED:
         ftime_glob = time.time()
         print(ftime_glob - stime_glob)
         for timestep in tqdm(range(num_steps)):
-            # Collision
+            # Collision. Since the displacement is locally dependent on the previous state at only its location, passing the u_num_displ_0 twice works as well.
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
             # Postprocessing, happens only if post_process_interval is smaller than num_steps.
