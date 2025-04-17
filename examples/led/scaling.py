@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # grid_sizes = [int(16 * 2**n) for n in range(4)]
     # grid_sizes = [40, 80, 160, 320, 640, 1280, 2560, 3840]
-    grid_sizes = [50, 100, 200, 400, 800, 1600, 2400, 3200, 4000]
+    grid_sizes = [400, 1000, 1600, 4000, 12000]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     print(c_k)
     for c_k_led, c_mu_led in zip(c_k, c_mu):
