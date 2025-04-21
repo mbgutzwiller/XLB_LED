@@ -104,6 +104,9 @@ class SineWave2D_LED:
 
             if timestep == 2:
                 stime = time.time()
+            if timestep > 3:  # for faster gpu load analysis
+                if time.time() - stime > 5:
+                    return 0, 0, 0, 0, 0
             # Postprocessing: Show plot or calculate error
             if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and post_process_interval < num_steps:
                 self.post_process(timestep, show_plot)

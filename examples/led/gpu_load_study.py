@@ -29,6 +29,7 @@ if __name__ == "__main__":
     c_mu = [_**0.5 for _ in _c_mu]
 
     grid_sizes = [50, 100, 150, 200, 250, 300, 350, 400, 800, 1600, 2400, 3200, 4000]
+    grid_sizes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 800, 1600, 2400, 3200, 4000]
     num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
     for c_k_led, c_mu_led in zip(c_k, c_mu):
         compute_backend = ComputeBackend.WARP
@@ -76,7 +77,7 @@ if __name__ == "__main__":
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
             wp.build.clear_kernel_cache()
-            num_steps_gpu_load = int(2e7/num_steps**0.8)
+            num_steps_gpu_load = int(3e7/num_steps**0.8)
             error_u, error_sigma, linf_error_u, linf_error_sigma, runtime = simulation.run(num_steps=num_steps_gpu_load, post_process_interval=num_steps_gpu_load)
             # Get GPU utilization
             runtimes.append(runtime)
