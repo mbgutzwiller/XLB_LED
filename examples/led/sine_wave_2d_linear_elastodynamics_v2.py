@@ -120,25 +120,17 @@ class SineWave2D_LED:
 
         for timestep in tqdm(range(num_steps)):
             # Collision
-            if timestep == 10:
+            if timestep == 2:
                 stime = time.time()
                 print("collected stime")
             self.f_1, self.f_0, self.U_num_tilde, self.u_num_displ_1 = self.stepper_collide(self.f_0, self.f_1, self.bc_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_0, self.u_num_displ_0)
 
             # Postprocessing: Show plot or calculate error
             if (timestep % post_process_interval == 0 or timestep == num_steps - 1) and post_process_interval < num_steps:
-                wp.synchronize_device()
-                wp.synchronize()
                 self.error_u_warp = self.get_l2sq_error(self.u_num_displ_1, self.error_u_warp, timestep)
-                # self.running_sum_u += self.sumup_errors_warp(self.error_u_warp, self.sum_u_timestep)
                 self.post_process(timestep, show_plot)
                 self.sum_u_timestep_out = self.sumup_errors_warp(self.error_u_warp, self.sum_u_timestep_in)
                 self.sum_u_timestep_in, self.sum_u_timestep_out = self.sum_u_timestep_out, self.sum_u_timestep_in
-                val = wp.to_jax(self.sum_u_timestep_in)[0]
-                val *= np.float32(wp.delta_t_led * wp.delta_x_led * wp.delta_x_led)
-                val = np.sqrt(val)
-                # print(val)
-                # time.sleep(1)
             
             # Streaming
             self.f_1, self.f_0, self.u_num_displ_0, self.u_num_displ_0 = self.stepper_stream(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.omega, timestep, self.U_num_tilde, self.u_num_displ_1, self.u_num_displ_0)
@@ -151,6 +143,9 @@ class SineWave2D_LED:
         final_error_norm_sigma = np.sqrt(self.cumulative_error_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         final_norm_sigma = np.sqrt(self.cumulative_sigma * np.float32(wp.delta_x_led)**2 * np.float32(wp.delta_t_led))
         # return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, ftime-stime
+        val = wp.to_jax(self.sum_u_timestep_in)[0]
+        val *= np.float32(wp.delta_t_led * wp.delta_x_led * wp.delta_x_led)
+        val = np.sqrt(val)
         return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, val
 
     def u_num_exact_x(self, x, y, t):
