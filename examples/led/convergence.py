@@ -20,14 +20,8 @@ plt.rcParams['axes.labelsize'] = 14      # X and Y labels
 if __name__ == "__main__":
     domain_size = 1
     total_time = 1
-    c_k = [0.8]
-    c_mu =[0.7]
-
-
-    # grid_sizes = [int(16 * 2**n) for n in range(4)]
-    grid_sizes = [40, 80, 120, 160, 240]
-    num_stepss = [int(grid_size * 2.5) for grid_size in grid_sizes]
-    print(c_k)
+    c_k = np.array([1.4])
+    c_mu = np.array([0.1])
     for c_k_led, c_mu_led in zip(c_k, c_mu):
         compute_backend = ComputeBackend.WARP
         precision_policy = PrecisionPolicy.FP32FP32
@@ -65,9 +59,7 @@ if __name__ == "__main__":
             wp.grid_size = wp.constant(grid_size)
 
             simulation = SineWave2D_LED(grid_shape, velocity_set, compute_backend, precision_policy)
-            wp.build.clear_kernel_cache()
             error_u, error_sigma, linf_error_u, linf_error_sigma = simulation.run(num_steps=num_steps, post_process_interval=1)
-            print(np.float32(wp.c_k_led)**2)
             l2_errors_u.append(error_u)
             l2_errors_sigma.append(error_sigma)
             linf_errors_u.append(linf_error_u)
@@ -120,11 +112,11 @@ if __name__ == "__main__":
             # fig2.suptitle(r"Relative $L_{\infty}$ Error of Displacement and Stress", fontsize=16)
             plt.savefig(os.path.join(figures_dir, f"dirBC_LINF_errors_f0bound_ck_{int(np.round(c_k_led, 1)*10)}_final"), dpi=600)
             plt.show(block=False)
-        print(f"l2 errors u: {l2_errors_u}")
-        print(f"l2 errors sigma: {l2_errors_sigma}")
-        print(f"linf errors u: {linf_errors_u}")
-        print(f"linf errors sigma: {linf_errors_sigma}")
-        print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
+            print(f"l2 errors u: {l2_errors_u}")
+            print(f"l2 errors sigma: {l2_errors_sigma}")
+            print(f"linf errors u: {linf_errors_u}")
+            print(f"linf errors sigma: {linf_errors_sigma}")
+            print(f"Finished runs for ck = {c_k_led}, cmu = {c_mu_led}.")
     print("Finished all runs.")
 
 
