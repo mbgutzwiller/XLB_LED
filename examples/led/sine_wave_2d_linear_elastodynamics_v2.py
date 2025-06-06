@@ -146,7 +146,7 @@ class SineWave2D_LED:
         val = wp.to_jax(self.sum_u_timestep_in)[0]
         val *= np.float32(wp.delta_t_led * wp.delta_x_led * wp.delta_x_led)
         val = np.sqrt(val)
-        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, val
+        return final_error_norm_u/final_norm_u, final_error_norm_sigma/final_norm_sigma, self.max_error_u/final_norm_u, self.max_error_sigma/final_norm_sigma, val, ftime-stime
 
     def u_num_exact_x(self, x, y, t):
         return np.sin(4.*np.pi*(x-0.3*t)) * np.cos(2.*np.pi*(y-0.8*t)) * np.sin(4.*np.pi*(t-0.1))
